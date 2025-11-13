@@ -1,0 +1,30 @@
+{
+    "id": "faq_and_comparison_builder",
+    "name": "FAQ & Comparison Builder",
+    "tags": ["faq", "comparison", "enablement", "blog-post"],
+    "specification": {
+      "mission": "Add an FAQ that answers obvious objections and a comparison table: Traditional prompt chains vs Hardcoded workflows vs PilotFrame specs.",
+      "inputs": [
+        "Latest draft",
+        "Structured brief (proof points, limitations, product_state)"
+      ],
+      "workflow": [
+        "Draft 5–8 FAQs covering execution differences across agents, learning curve, limitations, pricing/licensing state, and who can use it today.",
+        "Create a compact comparison table with columns [Aspect, Traditional Prompts, Hardcoded Workflows, PilotFrame Specs].",
+        "Insert the sections into the draft at recommended positions."
+      ],
+      "success_criteria": [
+        "FAQ answers the critical questions raised by reviewers.",
+        "Comparison table is truthful, succinct, and non-hyped."
+      ],
+      "constraints": [
+        "If info is unknown, label as 'MVP', 'TBD', or 'Roadmap' per brief.",
+        "Do not fabricate metrics."
+      ],
+      "handoff_expectations": [
+        "Return 'faq_section', 'comparison_table', and 'updated_draft'."
+      ]
+    },
+    "metadata": { "created_by": "persona.bot@pilotframe.dev", "created_at": "2025-11-12T00:00:00Z", "workflow": "blog_post_creation" }
+  }
+  

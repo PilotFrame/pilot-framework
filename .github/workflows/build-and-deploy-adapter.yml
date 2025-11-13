@@ -1,0 +1,108 @@
+name: Build and Deploy Adapter
+
+on:
+  workflow_dispatch:
+    inputs:
+      adapter_path:
+        description: "Path to adapter directory"
+        default: "adapter-template"
+        required: true
+      image_tag:
+        description: "Container image tag (e.g. v1.2.3)"
+        required: true
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+  push:
+    branches: ["main"]
+    paths:
+      - "adapter-template/**"
+      - ".github/workflows/build-and-deploy-adapter.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: ${{ secrets.ACR_NAME }}
+  AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }}
+  AKS_CLUSTER_NAME: ${{ secrets.AKS_CLUSTER_NAME }}
+  ADAPTER_NAMESPACE: ${{ secrets.ADAPTOR_NAMESPACE || 'persona-adapters' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine Inputs
+        id: inputs
+        run: |
+          if [ -n "${{ github.event.inputs.adapter_path }}" ]; then
+            echo "adapter_path=${{ github.event.inputs.adapter_path }}" >> $GITHUB_OUTPUT
+            echo "image_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "adapter_path=adapter-template" >> $GITHUB_OUTPUT
+            echo "image_tag=build-${GITHUB_SHA}" >> $GITHUB_OUTPUT
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: |
+          cd ${{ steps.inputs.outputs.adapter_path }}
+          npm ci
+
+      - name: Build Adapter
+        run: |
+          cd ${{ steps.inputs.outputs.adapter_path }}
+          npm run build
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and Push Image
+        env:
+          IMAGE_TAG: ${{ steps.inputs.outputs.image_tag }}
+        run: |
+          REGISTRY=${ACR_NAME}.azurecr.io
+          IMAGE=$REGISTRY/${{ steps.inputs.outputs.adapter_path }}:${IMAGE_TAG}
+          docker build -t $IMAGE ${{ steps.inputs.outputs.adapter_path }}
+          az acr login --name $ACR_NAME
+          docker push $IMAGE
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: AKS Credentials
+        run: |
+          az aks get-credentials \
+            --resource-group $AKS_RESOURCE_GROUP \
+            --name $AKS_CLUSTER_NAME \
+            --overwrite-existing
+
+      - name: Update Adapter Deployment
+        env:
+          IMAGE_TAG: ${{ steps.inputs.outputs.image_tag }}
+        run: |
+          REGISTRY=${ACR_NAME}.azurecr.io
+          IMAGE=$REGISTRY/${{ steps.inputs.outputs.adapter_path }}:${IMAGE_TAG}
+          kubectl -n ${ADAPTER_NAMESPACE} set image deployment/${{ steps.inputs.outputs.adapter_path }} \
+            ${{ steps.inputs.outputs.adapter_path }}=$IMAGE --record
+          kubectl -n ${ADAPTER_NAMESPACE} rollout status deployment/${{ steps.inputs.outputs.adapter_path }}
+
+      - name: Notify
+        if: always()
+        run: |
+          echo "Adapter image deployed: $IMAGE"
+

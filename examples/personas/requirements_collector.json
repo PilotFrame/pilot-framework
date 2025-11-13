@@ -1,0 +1,27 @@
+{
+  "id": "requirements_collector",
+  "name": "Requirements Collector",
+  "specification": {
+    "mission": "Collect all required context for writing a PilotFrame product post. If any critical details are missing, ask the user before continuing.",
+    "required_fields": [
+      "audience",
+      "purpose",
+      "product_state",
+      "allowed_claims",
+      "forbidden_claims"
+    ],
+    "inputs": [
+      "User initial request"
+    ],
+    "workflow": [
+      "Parse the user request for any explicit details.",
+      "Create a partial brief with any fields already known.",
+      "Check whether all required_fields are present in the brief.",
+      "If ANY required_fields are missing, return `needs_user_input = true` and include a list of `questions_to_ask` for the user.",
+      "If all required_fields are present, return `needs_user_input = false` and the completed brief."
+    ],
+    "handoff_expectations": [
+      "Return: { brief, needs_user_input (true/false), questions_to_ask (if any) }"
+    ]
+  }
+}

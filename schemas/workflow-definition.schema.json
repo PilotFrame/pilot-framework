@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pilotframe.dev/schemas/workflow-definition.schema.json",
+  "title": "PilotFrame Workflow Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "steps", "execution_spec"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "description": "Stable identifier used across control plane and MCP"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-friendly workflow name"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workflow_step"
+      },
+      "description": "List of workflow steps with personas"
+    },
+    "execution_spec": {
+      "type": "object",
+      "required": ["description", "flow_pattern"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Natural language description of how the workflow executes, including cycles, parallel execution, conditions, etc."
+        },
+        "flow_pattern": {
+          "type": "string",
+          "enum": ["sequential", "cycle", "parallel", "conditional", "mixed"],
+          "description": "High-level pattern type (hint for agents)"
+        },
+        "cycle_details": {
+          "type": "object",
+          "description": "If flow_pattern includes cycles, describe them here",
+          "properties": {
+            "cycle_steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Step IDs that form a cycle"
+            },
+            "exit_condition": {
+              "type": "string",
+              "description": "When to exit the cycle (e.g., 'seo_score > 0.8 AND accuracy_score > 0.8')"
+            },
+            "max_iterations": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            }
+          }
+        },
+        "parallel_details": {
+          "type": "object",
+          "description": "If flow_pattern includes parallel execution, describe it here",
+          "properties": {
+            "parallel_steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Step IDs that execute in parallel"
+            },
+            "merge_strategy": {
+              "type": "string",
+              "enum": ["all", "any", "majority"],
+              "description": "How to merge parallel results"
+            }
+          }
+        },
+        "conditional_branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition": {
+                "type": "string"
+              },
+              "target_step": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Conditional branching rules"
+        },
+        "execution_guidance": {
+          "type": "string",
+          "description": "Additional guidance for agents on how to interpret and execute this workflow"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "workflow_step": {
+      "type": "object",
+      "required": ["id", "persona_id", "order"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique step identifier"
+        },
+        "persona_id": {
+          "type": "string",
+          "description": "Persona ID to execute this step"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Display/initial order (may be overridden by execution_spec)"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable step label"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Optional condition expression for this step"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

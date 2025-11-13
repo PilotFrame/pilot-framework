@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pilotframe.dev/schemas/persona-spec.schema.json",
+  "title": "PilotFrame Persona Specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "specification"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "description": "Stable identifier used across control plane and adapters."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-friendly persona name"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional tags used for filtering/grouping"
+    },
+    "specification": {
+      "type": "object",
+      "description": "Arbitrary persona instructions/specification block",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "allowed_tool": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
+

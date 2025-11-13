@@ -1,0 +1,58 @@
+name: Deploy Static UI to Hostinger
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-static-hostinger.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      HOSTINGER_SFTP_HOST: ${{ secrets.HOSTINGER_SFTP_HOST }}
+      HOSTINGER_SFTP_USER: ${{ secrets.HOSTINGER_SFTP_USER }}
+      HOSTINGER_SFTP_KEY: ${{ secrets.HOSTINGER_SFTP_KEY }}
+      HOSTINGER_DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH || '/public_html' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build UI
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Deploy via SFTP
+        uses: pressidium/lftp-deploy-action@v1
+        with:
+          host: ${{ env.HOSTINGER_SFTP_HOST }}
+          port: 22
+          user: ${{ env.HOSTINGER_SFTP_USER }}
+          key: ${{ env.HOSTINGER_SFTP_KEY }}
+          upload-dir: frontend/dist
+          target-dir: ${{ env.HOSTINGER_DEPLOY_PATH }}
+          delete: true
+
+      - name: Purge Hostinger Cache (optional)
+        if: env.HOSTINGER_CACHE_PURGE_URL != ''
+        run: |
+          curl -X POST "$HOSTINGER_CACHE_PURGE_URL"
+

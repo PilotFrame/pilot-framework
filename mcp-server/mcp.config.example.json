@@ -1,0 +1,16 @@
+{
+  "mcpServers": [
+    {
+      "name": "pilotframe-mcp",
+      "command": "npm",
+      "args": ["run", "dev:mcp"],
+      "cwd": "/absolute/path/to/pf-framework",
+      "env": {
+        "CONTROL_PLANE_TOKEN": "LOCAL_DEV_TOKEN",
+        "CONTROL_PLANE_URL": "http://localhost:4000",
+        "ORCHESTRATOR_URL": "http://localhost:4100"
+      }
+    }
+  ]
+}
+
