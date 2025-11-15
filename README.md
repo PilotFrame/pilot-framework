@@ -1,214 +1,128 @@
-# PilotFrame MCP Control Plane (Skeleton)
+# Pilot Framework
 
-> Be strict about Azure + Hostinger constraints. Prefer managed Azure services when possible. Keep persona specs versioned, small, and audited. Give machine-readable JSON artifacts and a brief human summary. When uncertain, pick conservative security defaults.
+**A control plane for authoring, managing, and orchestrating AI personas and workflows through MCP (Model Context Protocol).**
 
-This repository contains the PilotFrame control plane MVP skeleton implemented with Node.js + TypeScript. It exposes REST endpoints for persona management and mock method invocation, integrates with PostgreSQL (Azure Database for PostgreSQL), and includes persona spec schema validation.
+Pilot Framework enables you to create structured AI personas with defined missions, workflows, and constraints, then expose them as tools that AI agents (like Cursor, Claude Desktop) can discover and use. Build complex multi-step workflows that orchestrate multiple personas to accomplish sophisticated tasks.
 
-## Complete Setup Guide: From Zero to MCP Integration
+> Part of the [PilotFrame](https://pilotframe.com) ecosystem
 
-This guide walks you through setting up the entire PilotFrame system, adding personas, and configuring Cursor to use MCP tools.
+---
+
+## What is Pilot Framework?
+
+Pilot Framework is a platform that bridges the gap between AI agent capabilities and structured, reusable expertise. Instead of asking an AI agent to "be a code reviewer" every time, you define a **persona** once with specific instructions, constraints, and workflows. That persona becomes a discoverable tool that any MCP-compatible AI agent can use.
+
+### Key Concepts
+
+- **Personas**: Structured AI roles with defined missions, inputs, workflows, success criteria, and constraints. Each persona is a reusable expert that AI agents can invoke.
+- **Workflows**: Multi-step processes that orchestrate multiple personas in sequence, cycles, or parallel execution patterns.
+- **MCP Integration**: Personas and workflows are automatically exposed as MCP tools, making them discoverable by AI agents like Cursor and Claude Desktop.
+
+---
+
+## Features
+
+### 🤖 AI-Assisted Creation
+Create personas and workflows through natural language conversation. The AI Assistant understands your requirements and guides you through the creation process, generating valid specifications that match Pilot Framework schemas.
+
+### 📋 Persona Management
+- **Visual Editor**: Create and edit persona specifications through an intuitive UI
+- **Schema Validation**: Automatic validation ensures personas meet Pilot Framework standards
+- **Version Control**: Track changes and maintain persona history
+- **MCP Tool Generation**: Each persona automatically becomes an MCP tool (e.g., `persona.seo_specialist.get_specification`)
+
+### 🔄 Workflow Orchestration
+- **Multi-Persona Workflows**: Chain multiple personas together to accomplish complex tasks
+- **Execution Patterns**: Support for sequential, parallel, cycle, and mixed execution patterns
+- **Conditional Logic**: Define handoff rules and conditions between workflow steps
+- **Workflow Tools**: Workflows are exposed as MCP tools for AI agents to execute
+
+### 🔌 MCP Integration
+- **HTTP-Based MCP Server**: Built-in MCP server endpoint (`/mcp`) that exposes personas and workflows
+- **Tool Discovery**: AI agents automatically discover available personas and workflows
+- **Resource Access**: Personas and workflows are accessible as MCP resources
+- **No Separate Process**: MCP server is integrated into the control plane
+
+### 💬 Conversation Management
+- **Persistent Conversations**: All AI Assistant conversations are saved and can be resumed
+- **Context Management**: Attach personas/workflows to conversations to maintain context
+- **Message Exclusion**: Mark messages as excluded from API context to reduce token usage
+- **History Truncation**: Automatic truncation to last 40 messages to prevent token limits
+
+---
+
+## Building Blocks
+
+### Control Plane
+The central server that manages personas, workflows, and exposes them via REST API and MCP protocol. Includes:
+- REST API for CRUD operations
+- MCP server endpoint for AI agent integration
+- Schema validation engine
+- Conversation persistence
+- AI Assistant service
+
+### Frontend UI
+React-based web interface for:
+- Creating and editing personas
+- Designing workflows
+- Managing conversations with the AI Assistant
+- Testing MCP tools
+
+### Persona Specifications
+JSON-based specifications that define:
+- **Mission**: What the persona does
+- **Inputs**: What information it needs
+- **Workflow**: Step-by-step process
+- **Success Criteria**: How to measure success
+- **Constraints**: Rules and limitations
+- **Handoff Expectations**: How it interacts with other personas
+
+### Workflow Definitions
+JSON-based definitions that specify:
+- **Steps**: Sequence of personas to execute
+- **Execution Pattern**: Sequential, parallel, cycle, or mixed
+- **Execution Guidance**: Rules for when and how to proceed
+- **Exit Conditions**: When the workflow is complete
+
+---
+
+## Quick Start
 
 ### Prerequisites
+- Node.js 20+
+- Azure OpenAI account (for AI Assistant feature)
 
-- **Node.js 20+** installed
-- **Git** (to clone the repository)
-- **Cursor IDE** (or Claude Desktop) for MCP integration
-- **Windows PowerShell** or **Command Prompt** (for Windows users)
+### Installation
 
----
-
-### Step 1: Install Dependencies
-
-1. **Clone and navigate to the repository:**
-   ```bash
-   cd pf-framework
-   ```
-
-2. **Install root dependencies:**
+1. **Clone and install dependencies:**
    ```bash
    npm install
+   cd frontend && npm install && cd ..
    ```
 
-3. **Install frontend dependencies:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-4. **Install MCP server dependencies:**
-   ```bash
-   cd mcp-server
-   npm install
-   cd ..
-   ```
-
----
-
-### Step 2: Configure Environment Variables
-
-1. **Create `.env` file in the root directory:**
-   ```bash
-   # Windows PowerShell
-   New-Item .env
-   
-   # Or manually create .env file
-   ```
-
-2. **Add the following to `.env`:**
+2. **Configure environment:**
+   Create a `.env` file:
    ```env
    PORT=4000
    AUTH_JWT_SECRET=LOCAL_DEV_TOKEN
-   NODE_ENV=development
-   
-   # Azure OpenAI Configuration (for AI Assistant feature)
-   AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com
+   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
    AZURE_OPENAI_API_KEY=your-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5
-   ```
-   
-   **Note:** The AI Assistant feature requires Azure OpenAI credentials. If you don't have them yet, you can skip these variables and the assistant feature will show an error when used.
-
-3. **Generate a JWT token for API authentication:**
-   ```bash
-   node -e "console.log(require('jsonwebtoken').sign({ sub: 'dev-user', roles: ['Persona.Author'] }, 'LOCAL_DEV_TOKEN'))"
-   ```
-   
-   **Save this token** - you'll need it for the frontend and MCP server configuration.
-
-   Example output:
-   ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXYtdXNlciIsInJvbGVzIjpbIlBlcnNvbmEuQXV0aG9yIl0sImlhdCI6MTc2MjY5MTU5NX0.RZkjGfoV2JqBVPFZolYSMN4sOJg_dBJPuDw2-1TDmNc
+   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-chat
    ```
 
----
-
-### Step 3: Start the Control Plane
-
-1. **Open a terminal and start the control plane:**
+3. **Start the control plane:**
    ```bash
    npm run dev
    ```
 
-2. **Verify it's running:**
-   - You should see: `Server listening on http://localhost:4000`
-   - Test health endpoint:
-     ```bash
-     # Windows PowerShell
-     curl.exe http://localhost:4000/health
-     
-     # Windows Command Prompt
-     curl.exe http://localhost:4000/health
-     ```
-   - Expected response: `{"status":"ok","dependencies":{"database":"not_configured"},"timestamp":"..."}`
-
-3. **Keep this terminal open** - the control plane must stay running.
-
----
-
-### Step 4: Start the Frontend UI
-
-1. **Open a new terminal** and navigate to the frontend directory:
+4. **Start the frontend (in a new terminal):**
    ```bash
    cd frontend
    npm run dev
    ```
 
-2. **Open your browser** and navigate to: `http://localhost:5173`
-
-3. **Configure the connection:**
-   - **Control Plane URL**: `http://localhost:4000`
-   - **Bearer Token**: Paste the JWT token you generated in Step 2
-   - Click **Save Connection**
-
-4. **Verify connection:**
-   - You should see "Saved connection" message
-   - The Persona Registry panel should load (may be empty initially)
-
----
-
-### Step 5: Add a Persona via UI
-
-1. **In the frontend UI**, click **"+ New Persona"** button in the Persona Registry panel
-
-2. **Fill in the persona details:**
-   - **ID**: Enter a MCP-compliant ID (e.g., `seo_specialist`)
-     - Must be lowercase, alphanumeric, with underscores/dashes/dots only
-     - The UI will auto-sanitize invalid characters
-     - You'll see a preview of the MCP tool name: `persona.seo_specialist.get_specification`
-   
-   - **Name**: Enter a human-friendly name (e.g., `SEO Specialist`)
-   
-   - **Tags**: Optional comma-separated tags (e.g., `seo, content, review`)
-   
-   - **Specification**: Enter JSON specification. Example:
-     ```json
-     {
-       "mission": "Provide structured SEO review instructions for long-form content.",
-       "inputs": [
-         "Draft text",
-         "Target keyword",
-         "Business goal"
-       ],
-       "workflow": [
-         "Scan the brief to understand the target audience and primary keyword intent.",
-         "Review the draft for coverage, structure, tone, metadata gaps.",
-         "Provide feedback grouped by priority (high/medium/low)."
-       ],
-       "success_criteria": [
-         "Draft addresses target keyword intent within the first 150 words.",
-         "Headings and sub-headings contain keyword variations.",
-         "Tone aligns with brand guidelines."
-       ],
-       "constraints": [
-         "Avoid suggesting black-hat tactics.",
-         "Do not expose raw analytics or sensitive data."
-       ]
-     }
-     ```
-
-3. **Click "Save Persona"**
-   - You should see a success message: "Saved SEO Specialist"
-   - The persona should appear in the Persona Registry list
-
-4. **Verify the persona was created:**
-   - Check the Persona Registry - your new persona should be listed
-   - Click on it to edit/view details
-   - The MCP tool name should be visible: `persona.seo_specialist.get_specification`
-
----
-
-### Step 6: Create a Workflow (Optional)
-
-1. **In the frontend UI**, scroll down to the **Workflow Editor** section
-
-2. **Click "+ New Workflow"**
-
-3. **Fill in workflow details:**
-   - **Workflow ID**: `content_loop` (MCP-compliant)
-   - **Name**: `Content Creation Loop`
-   - **Steps**: Click "+ Add Step" and select personas in order:
-     - Step 1: Select a persona (e.g., `seo_specialist`)
-     - Step 2: Add another step with a different persona
-     - Optionally add conditions or handoff rules
-
-4. **Click "Save Workflow"**
-
----
-
-### Step 7: Configure Cursor for MCP (HTTP-based)
-
-The control plane now exposes an HTTP-based MCP endpoint at `/mcp`. This means you can connect via URL instead of starting a local process.
-
-1. **Locate Cursor's MCP configuration file:**
-   - **Windows**: `C:\Users\<YourUsername>\.cursor\mcp.json`
-   - **macOS/Linux**: `~/.cursor/mcp.json`
-
-2. **Open `mcp.json` in a text editor**
-
-3. **Add the PilotFrame MCP server configuration:**
-   
-   If the file doesn't exist, create it with:
+5. **Configure Cursor for MCP:**
+   Add to `~/.cursor/mcp.json`:
    ```json
    {
      "mcpServers": {
@@ -221,249 +135,147 @@ The control plane now exposes an HTTP-based MCP endpoint at `/mcp`. This means y
      }
    }
    ```
-   
-   If the file already exists (e.g., with other MCP servers), merge the `pilotframe-mcp` entry:
-   ```json
-   {
-     "mcpServers": {
-       "microsoft.learn": {
-         "url": "https://learn.microsoft.com/api/mcp"
-       },
-       "pilotframe-mcp": {
-         "url": "http://localhost:4000/mcp",
-         "headers": {
-           "Authorization": "Bearer <YOUR_JWT_TOKEN>"
-         }
-       }
-     }
-   }
-   ```
 
-4. **Important Configuration Notes:**
-   - Replace `<YOUR_JWT_TOKEN>` with the actual JWT token from Step 2
-   - The MCP server is now part of the control plane - no separate process needed!
-   - For production, replace `http://localhost:4000` with your deployed control plane URL
-   - The `/mcp` endpoint requires authentication via Bearer token
+For detailed setup instructions, see the [Complete Setup Guide](#complete-setup-guide) below.
 
 ---
 
-### Step 8: Verify MCP Integration in Cursor
+## Complete Setup Guide
 
-1. **Restart Cursor** completely (close and reopen)
+### Step 1: Generate JWT Token
+```bash
+node -e "console.log(require('jsonwebtoken').sign({ sub: 'dev-user', roles: ['Persona.Author'] }, 'LOCAL_DEV_TOKEN'))"
+```
+Save this token for frontend and MCP configuration.
 
-2. **Check MCP server connection:**
-   - Open Cursor's MCP panel (if available)
-   - Look for `pilotframe-mcp` in the list of connected servers
-   - Check for any error messages
+### Step 2: Start Services
+**Terminal 1 - Control Plane:**
+```bash
+npm run dev
+```
 
-3. **Test MCP tools:**
-   - In a Cursor chat, try asking: "List available personas"
-   - The agent should be able to call `persona.list` tool
-   - Try: "Get the specification for the SEO specialist persona"
-   - The agent should call `persona.seo_specialist.get_specification`
+**Terminal 2 - Frontend:**
+```bash
+cd frontend && npm run dev
+```
 
-4. **Available MCP Tools:**
-   - `persona.list` - List all available personas
-   - `persona.{id}.get_specification` - Get persona specification (e.g., `persona.seo_specialist.get_specification`)
-   - `workflow.{id}` - Get workflow definition (e.g., `workflow.content_loop`)
-   - `control_plane.health` - Check control plane health
+### Step 3: Configure Frontend
+1. Open `http://localhost:5173`
+2. Enter Control Plane URL: `http://localhost:4000`
+3. Paste your JWT token
+4. Click "Save Connection"
 
----
+### Step 4: Configure Cursor MCP
+Add to `~/.cursor/mcp.json` (or `C:\Users\<YourUsername>\.cursor\mcp.json` on Windows):
+```json
+{
+  "mcpServers": {
+    "pilotframe-mcp": {
+      "url": "http://localhost:4000/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_JWT_TOKEN>"
+      }
+    }
+  }
+}
+```
+Restart Cursor to activate MCP integration.
+
+### Step 5: Create Your First Persona
+1. In the frontend UI, click **"+ New Persona"**
+2. Enter an ID (e.g., `seo_specialist`)
+3. Fill in the specification JSON
+4. Click **"Save Persona"**
+
+The persona will automatically be available as an MCP tool: `persona.seo_specialist.get_specification`
 
 ### Troubleshooting
+- **Port 4000 in use**: Change `PORT` in `.env` or kill the process using the port
+- **401 Unauthorized**: Verify `AUTH_JWT_SECRET` matches the secret used to generate your token
+- **MCP not working**: Ensure control plane is running and Cursor is restarted after configuration changes
 
-#### Control Plane Issues
-
-- **Port 4000 already in use:**
-  
-  **Windows PowerShell/CMD:**
-  ```powershell
-  # Find what's using port 4000
-  netstat -ano | findstr :4000
-  
-  # Kill the process (replace PID with the actual process ID)
-  taskkill /PID <PID> /F
-  
-  # Or change PORT in .env file
-  PORT=4001
-  ```
-  
-  **macOS/Linux:**
-  ```bash
-  # Find what's using port 4000
-  lsof -i :4000
-  
-  # Kill the process
-  kill -9 <PID>
-  
-  # Or change PORT in .env file
-  PORT=4001
-  ```
-
-- **401 Unauthorized errors:**
-  - Verify `AUTH_JWT_SECRET` in `.env` matches the secret used to generate the JWT token
-  - Regenerate the token if needed
-
-#### Frontend Issues
-
-- **CORS errors:**
-  - Ensure control plane is running
-  - Check that the URL in the frontend matches the control plane URL
-
-- **Connection fails:**
-  - Verify the JWT token is correct
-  - Check browser console for error messages
-
-#### MCP Server Issues
-
-- **Cursor can't connect to MCP server:**
-  - Ensure control plane is running (`npm run dev`)
-  - Verify `mcp.json` syntax is valid JSON
-  - Check that the URL in `mcp.json` matches your control plane URL (`http://localhost:4000/mcp`)
-  - Verify the Bearer token in `mcp.json` headers matches your JWT token
-  - Check Cursor's MCP logs for error messages
-
-- **No tools appear in Cursor:**
-  - Verify personas exist in `examples/personas/` directory
-  - Check that persona JSON files are valid
-  - Test the `/mcp/tools` endpoint directly: `curl -H "Authorization: Bearer <TOKEN>" http://localhost:4000/mcp/tools`
-  - Restart Cursor after making changes
-
-#### Common Windows-Specific Issues
-
-- **PowerShell execution policy:**
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
-
-- **Path issues in mcp.json:**
-  - Use forward slashes: `C:/Dev/BytesFromAli/pf-framework`
-  - Or escape backslashes: `C:\\Dev\\BytesFromAli\\pf-framework`
+For detailed troubleshooting and advanced configuration, see the technical documentation in `/docs`.
 
 ---
 
-### Quick Reference: Running Services
+## Documentation
 
-You need **2 terminals** running simultaneously:
+### Technical Documentation
+All technical documentation is located in the [`/docs`](./docs/) folder:
 
-1. **Terminal 1 - Control Plane (includes MCP server):**
-   ```bash
-   npm run dev
-   ```
-   The control plane now includes the MCP server at `/mcp` endpoint - no separate process needed!
+- **[Architecture](./docs/architecture/)** - System architecture and design decisions
+  - [Spec Registry Domain](./docs/architecture/spec-registry-domain.md)
+  - [Adapter Template](./docs/architecture/adapter-template.md)
+  - [Sandbox Runner](./docs/architecture/sandbox-runner.md)
 
-2. **Terminal 2 - Frontend (optional, for UI):**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+- **[Features](./docs/features/)** - Feature documentation
+  - [AI-Assisted Creation](./docs/features/ai-assisted-creation.md)
+
+- **[MCP Integration](./docs/mcp-hierarchical-structure.md)** - MCP protocol details and tool structure
+
+- **[UI Guidelines](./docs/ui-mcp-rules.md)** - UI rules and MCP compliance
+
+- **[Operations](./docs/ops/)** - Deployment and CI/CD guides
+  - [CI/CD Blueprint](./docs/ops/cicd-blueprint.md)
+  - [Secrets Management](./docs/ops/cicd-secrets.md)
+
+- **[Vision](./docs/VISION.md)** - Project vision and roadmap
+
+### API Documentation
+- REST API endpoints are documented in the codebase
+- MCP tools are automatically discoverable via the `/mcp/tools` endpoint
 
 ---
 
-### Next Steps
-
-Once everything is running:
-
-1. **Create more personas** via the UI
-2. **Create workflows** that orchestrate multiple personas
-3. **Use Cursor** to interact with personas via MCP tools
-4. **Test workflows** by asking Cursor to execute them
-
-For more details, see:
-- [MCP Hierarchical Structure](./docs/mcp-hierarchical-structure.md)
-- [UI MCP Rules](./docs/ui-mcp-rules.md)
-
-## Architecture & Development
-
-### Features
-
-- **AI Assistant**: Natural language chat interface to create personas and workflows using Azure OpenAI GPT-5
-- **Persona Management**: Create, edit, and version persona specifications via UI or API
-- **Workflow Management**: Define multi-step workflows that orchestrate multiple personas
-- **MCP Integration**: Expose personas and workflows as MCP tools for AI agents (Cursor, Claude Desktop)
-- **Schema Validation**: Automatic validation of persona and workflow specifications
-- **REST API**: Full CRUD API for personas and workflows with JWT authentication
-
-- REST API (Express)
-  - `GET /health`
-  - `POST /mcp` - MCP protocol endpoint (JSON-RPC 2.0)
-  - `GET /mcp/tools` - List MCP tools (requires auth)
-  - `POST /mcp/tools/:toolName` - Call MCP tool (requires auth)
-  - `GET /mcp/resources` - List MCP resources (requires auth)
-  - `GET /api/personas` - List all personas
-  - `GET /api/personas/:id/spec` - Get persona specification
-  - `POST /api/personas` - Create persona
-  - `POST /api/workflows` - Create workflow
-  - `GET /api/workflows/:id` - Get workflow
-  - `POST /api/assistant/chat` - AI Assistant chat endpoint (requires auth)
-  - `POST /api/invoke` - Invoke persona method
-- Persona spec JSON Schema + AJV tests
-- Postgres migrations (`migrations/0001_init.sql`)
-- Basic JWT auth stub (HS256 secret)
-- Dockerfile optimized for Azure Container Registry builds
-- Security model reference (`security.md`)
-
-### Environment Variables
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `PORT` | HTTP port | `4000` |
-| `NODE_ENV` | Environment | `development` |
-| `DATABASE_URL` | Postgres connection string | unset (in-memory fallback) |
-| `AUTH_JWT_SECRET` | HS256 secret for JWT validation | **required** |
-| `LOG_LEVEL` | `debug` \| `info` \| `warn` \| `error` | `info` |
-| `AZURE_KEY_VAULT_URI` | Optional reference for secret sourcing | unset |
-| `AZURE_BLOB_URL` | Optional audit log storage | unset |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint URL | unset (required for AI Assistant) |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key | unset (required for AI Assistant) |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Azure OpenAI deployment name (e.g., gpt-5-chat) | `gpt-5-chat` |
-| `AZURE_OPENAI_API_VERSION` | API version (auto-detected for GPT-5: 2025-08-07) | auto-detected |
-
-### Database Migrations
-
-```bash
-DATABASE_URL=postgres://... npm run migrate
-```
-
-Uses `scripts/run-migrations.js` to apply SQL in `migrations/`.
-
-### Testing
+## Project Structure
 
 ```
-npm test
+pf-framework/
+├── src/server/          # Control plane server (Express + TypeScript)
+├── frontend/            # React UI for persona/workflow management
+├── schemas/             # JSON schemas for persona and workflow validation
+├── examples/            # Example personas and workflows
+├── docs/                # Technical documentation
+├── migrations/          # Database migrations
+└── mcp-server/          # Standalone MCP server (optional, HTTP endpoint preferred)
 ```
 
-Validates sample persona specs against `schemas/persona-spec.schema.json`.
+---
 
-### Docker Build (Azure-ready)
+## Key Capabilities
 
-```bash
-docker build -t pf-control-plane:dev .
-docker run -p 4000:4000 \
-  -e AUTH_JWT_SECRET=LOCAL_DEV_TOKEN \
-  pf-control-plane:dev
-```
+### For Developers
+- **REST API**: Full CRUD operations for personas and workflows
+- **Schema Validation**: Automatic validation using JSON Schema
+- **Type Safety**: Full TypeScript support
+- **Extensible**: Plugin architecture for custom persona types
 
-Push to Azure Container Registry:
+### For AI Agents
+- **Tool Discovery**: Automatic discovery of available personas and workflows
+- **Specification Access**: Get detailed persona specifications on demand
+- **Workflow Execution**: Execute multi-step workflows through MCP
+- **Resource Access**: Access personas and workflows as MCP resources
 
-```bash
-az acr login --name <registry>
-docker tag pf-control-plane:dev <registry>.azurecr.io/pf-control-plane:dev
-docker push <registry>.azurecr.io/pf-control-plane:dev
-```
+### For Content Creators
+- **AI Assistant**: Natural language interface for creating personas
+- **Visual Editors**: Intuitive UI for editing specifications
+- **Conversation History**: Persistent conversations with context management
+- **Template Library**: Example personas and workflows to learn from
 
-### Directory Structure
+---
 
-- `schemas/` – persona spec schema
-- `examples/personas/` – sample persona specs
-- `src/server/` – Express app, routes, services
-- `frontend/` – React UI for persona/workflow management
-- `mcp-server/` – MCP server exposing personas/workflows as tools
-- `migrations/` – Postgres schema migrations
-- `security.md` – Azure identity, Key Vault, RBAC, redaction guidance
+## Contributing
 
+This is an active development project. For contribution guidelines and development setup, see the technical documentation in `/docs`.
 
-### kill Server
+---
 
-`netstat -ano | findstr :4000
-taskkill /PID 7912 /F`
+## License
+
+[Add your license here]
+
+---
+
+## Support
+
+For issues, questions, or contributions, please refer to the documentation in `/docs` or open an issue in the repository.
