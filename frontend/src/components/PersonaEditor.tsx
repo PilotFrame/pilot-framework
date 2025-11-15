@@ -24,29 +24,104 @@ type SpecificationForm = {
   workflow: string[];
   success_criteria: string[];
   constraints: string[];
-  handoff_expectations: string[];
 };
 
-function parseSpecification(spec: Record<string, unknown>): SpecificationForm {
-  return {
+// Complex fields that should be preserved as-is (not edited in form view)
+const COMPLEX_FIELDS = [
+  'handoff_expectations',
+  'interaction_prompts',
+  'acceptance_tests',
+  'tools',
+  'error_handling',
+  'authorization',
+  'provenance_rules',
+  'scoring',
+  'locale_handling',
+  'safety',
+  'expected_inputs_schema'
+] as const;
+
+function parseSpecification(spec: Record<string, unknown>): {
+  form: SpecificationForm;
+  complexFields: Record<string, unknown>;
+} {
+  const form: SpecificationForm = {
     mission: (spec.mission as string) || '',
-    inputs: Array.isArray(spec.inputs) ? (spec.inputs as string[]) : [],
-    workflow: Array.isArray(spec.workflow) ? (spec.workflow as string[]) : [],
-    success_criteria: Array.isArray(spec.success_criteria) ? (spec.success_criteria as string[]) : [],
-    constraints: Array.isArray(spec.constraints) ? (spec.constraints as string[]) : [],
-    handoff_expectations: Array.isArray(spec.handoff_expectations) ? (spec.handoff_expectations as string[]) : []
+    inputs: Array.isArray(spec.inputs) 
+      ? spec.inputs.map(item => typeof item === 'string' ? item : JSON.stringify(item))
+      : [],
+    workflow: Array.isArray(spec.workflow) 
+      ? spec.workflow.map(item => typeof item === 'string' ? item : JSON.stringify(item))
+      : [],
+    success_criteria: Array.isArray(spec.success_criteria) 
+      ? spec.success_criteria.map(item => typeof item === 'string' ? item : JSON.stringify(item))
+      : [],
+    constraints: Array.isArray(spec.constraints) 
+      ? spec.constraints.map(item => typeof item === 'string' ? item : JSON.stringify(item))
+      : []
   };
+
+  // Preserve complex fields
+  const complexFields: Record<string, unknown> = {};
+  for (const field of COMPLEX_FIELDS) {
+    if (spec[field] !== undefined) {
+      complexFields[field] = spec[field];
+    }
+  }
+
+  return { form, complexFields };
 }
 
-function buildSpecification(form: SpecificationForm): Record<string, unknown> {
-  const spec: Record<string, unknown> = {};
+function buildSpecification(form: SpecificationForm, complexFields: Record<string, unknown>): Record<string, unknown> {
+  const spec: Record<string, unknown> = { ...complexFields };
+  
   if (form.mission.trim()) spec.mission = form.mission.trim();
-  if (form.inputs.length > 0) spec.inputs = form.inputs.filter((i) => i.trim());
-  if (form.workflow.length > 0) spec.workflow = form.workflow.filter((w) => w.trim());
-  if (form.success_criteria.length > 0) spec.success_criteria = form.success_criteria.filter((s) => s.trim());
-  if (form.constraints.length > 0) spec.constraints = form.constraints.filter((c) => c.trim());
-  if (form.handoff_expectations.length > 0)
-    spec.handoff_expectations = form.handoff_expectations.filter((h) => h.trim());
+  if (form.inputs.length > 0) {
+    spec.inputs = form.inputs
+      .filter((i) => i.trim())
+      .map(item => {
+        // Try to parse as JSON, if fails return as string
+        try {
+          return JSON.parse(item);
+        } catch {
+          return item;
+        }
+      });
+  }
+  if (form.workflow.length > 0) {
+    spec.workflow = form.workflow
+      .filter((w) => w.trim())
+      .map(item => {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return item;
+        }
+      });
+  }
+  if (form.success_criteria.length > 0) {
+    spec.success_criteria = form.success_criteria
+      .filter((s) => s.trim())
+      .map(item => {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return item;
+        }
+      });
+  }
+  if (form.constraints.length > 0) {
+    spec.constraints = form.constraints
+      .filter((c) => c.trim())
+      .map(item => {
+        try {
+          return JSON.parse(item);
+        } catch {
+          return item;
+        }
+      });
+  }
+  
   return spec;
 }
 
@@ -58,7 +133,9 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
     (value.metadata?.web_search_enabled as boolean) || false
   );
   const [viewMode, setViewMode] = useState<'form' | 'json'>('form');
-  const [specForm, setSpecForm] = useState<SpecificationForm>(() => parseSpecification(value.specification || {}));
+  const [parsedSpec, setParsedSpec] = useState(() => parseSpecification(value.specification || {}));
+  const [specForm, setSpecForm] = useState<SpecificationForm>(parsedSpec.form);
+  const [complexFields, setComplexFields] = useState<Record<string, unknown>>(parsedSpec.complexFields);
   const [specText, setSpecText] = useState(JSON.stringify(value.specification || {}, null, 2));
   const [specError, setSpecError] = useState<string | null>(null);
   const [idError, setIdError] = useState<string | null>(null);
@@ -69,7 +146,9 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
     setTags(value.tags?.join(', ') || '');
     setWebSearchEnabled((value.metadata?.web_search_enabled as boolean) || false);
     const parsed = parseSpecification(value.specification || {});
-    setSpecForm(parsed);
+    setParsedSpec(parsed);
+    setSpecForm(parsed.form);
+    setComplexFields(parsed.complexFields);
     setSpecText(JSON.stringify(value.specification || {}, null, 2));
     setSpecError(null);
   }, [value]);
@@ -110,7 +189,7 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
   const handleSpecFormChange = (field: keyof SpecificationForm, fieldValue: string | string[]) => {
     const updated = { ...specForm, [field]: fieldValue };
     setSpecForm(updated);
-    const spec = buildSpecification(updated);
+    const spec = buildSpecification(updated, complexFields);
     onChange({ ...value, specification: spec });
   };
 
@@ -139,7 +218,10 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
       onChange({ ...value, specification: parsed });
       setSpecError(null);
       // Sync form view if user switches back
-      setSpecForm(parseSpecification(parsed));
+      const parsedSpec = parseSpecification(parsed);
+      setParsedSpec(parsedSpec);
+      setSpecForm(parsedSpec.form);
+      setComplexFields(parsedSpec.complexFields);
     } catch (error) {
       setSpecError((error as Error).message);
     }
@@ -147,14 +229,17 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
 
   const handleViewModeChange = (mode: 'form' | 'json') => {
     if (mode === 'json') {
-      // Update JSON text from current form
-      const spec = buildSpecification(specForm);
+      // Update JSON text from current form and complex fields
+      const spec = buildSpecification(specForm, complexFields);
       setSpecText(JSON.stringify(spec, null, 2));
     } else {
       // Update form from JSON text
       try {
         const parsed = JSON.parse(specText);
-        setSpecForm(parseSpecification(parsed));
+        const parsedSpec = parseSpecification(parsed);
+        setParsedSpec(parsedSpec);
+        setSpecForm(parsedSpec.form);
+        setComplexFields(parsedSpec.complexFields);
         setSpecError(null);
       } catch (error) {
         // Keep showing error, don't switch
@@ -372,11 +457,45 @@ export function PersonaEditor({ value, onChange, onSave, isSaving, statusMessage
             'e.g., Avoid suggesting black-hat tactics'
           )}
 
-          {renderArrayField(
-            'handoff_expectations',
-            'Handoff Expectations',
-            'Describe what this persona should return or deliver. What format and content should the output have?',
-            'e.g., Return a scorecard with overall confidence (0-1)'
+          {Object.keys(complexFields).length > 0 && (
+            <div className="rounded-md border border-amber-700/50 bg-amber-900/20 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <label className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                  Complex Fields (JSON View Only)
+                </label>
+              </div>
+              <p className="mb-2 text-xs text-amber-200/80">
+                This persona contains complex structured fields that are preserved but not editable in Form View:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.keys(complexFields).map((field) => (
+                  <span
+                    key={field}
+                    className="rounded bg-amber-900/40 px-2 py-1 text-xs font-mono text-amber-200"
+                  >
+                    {field}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-amber-200/80">
+                Switch to <strong>JSON View</strong> to edit these fields: handoff_expectations, interaction_prompts,
+                acceptance_tests, tools, error_handling, etc.
+              </p>
+            </div>
           )}
         </div>
       ) : (

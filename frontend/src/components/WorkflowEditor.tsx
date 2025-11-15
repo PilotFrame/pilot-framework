@@ -16,6 +16,7 @@ export interface WorkflowStep {
   id: string;
   persona_id: string;
   order: number;
+  label?: string;
   condition?: string;
   handoff_to?: string;
 }
@@ -39,6 +40,7 @@ export interface ExecutionSpec {
     description?: string;
   }>;
   execution_guidance?: string;
+  agent_guidance?: string;
 }
 
 export interface WorkflowDefinition {
@@ -46,6 +48,7 @@ export interface WorkflowDefinition {
   name: string;
   steps: WorkflowStep[];
   execution_spec?: ExecutionSpec;
+  user_prompts?: Record<string, string>;
   metadata?: Record<string, unknown>;
 }
 
@@ -243,9 +246,28 @@ export function WorkflowEditor({
                 .sort((a, b) => a.order - b.order)
                 .map((step) => (
                   <div key={step.id} className="rounded-md border border-slate-800 bg-slate-950/60 p-3">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-300">Step {step.order}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeStep(step.id)}
+                        className="rounded-md bg-red-900/40 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-900/60"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-slate-400">Persona</label>
+                        <label className="text-xs font-semibold text-slate-400">Label (optional)</label>
+                        <input
+                          className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                          value={step.label || ''}
+                          onChange={(e) => updateStep(step.id, { label: e.target.value || undefined })}
+                          placeholder="e.g., Collect Client Brief"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-400">Persona <span className="text-red-400">*</span></label>
                         <select
                           className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
                           value={step.persona_id}
@@ -259,7 +281,6 @@ export function WorkflowEditor({
                           ))}
                         </select>
                       </div>
-
                       <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-slate-400">Condition (optional)</label>
                         <input
@@ -269,24 +290,14 @@ export function WorkflowEditor({
                           placeholder="e.g., score > 0.75"
                         />
                       </div>
-
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="text-xs font-semibold text-slate-400">Handoff To (optional)</label>
-                          <input
-                            className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
-                            value={step.handoff_to || ''}
-                            onChange={(e) => updateStep(step.id, { handoff_to: e.target.value || undefined })}
-                            placeholder="Next step ID"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeStep(step.id)}
-                          className="rounded-md bg-red-900/40 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-900/60"
-                        >
-                          Remove
-                        </button>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-400">Handoff To (optional)</label>
+                        <input
+                          className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                          value={step.handoff_to || ''}
+                          onChange={(e) => updateStep(step.id, { handoff_to: e.target.value || undefined })}
+                          placeholder="Next step ID"
+                        />
                       </div>
                     </div>
                   </div>
@@ -370,6 +381,188 @@ export function WorkflowEditor({
                 />
               </div>
 
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-300">Agent Guidance (Optional)</label>
+                <textarea
+                  className="min-h-[80px] rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                  value={workflow.execution_spec?.agent_guidance || ''}
+                  onChange={(e) =>
+                    onWorkflowChange({
+                      ...workflow,
+                      execution_spec: {
+                        ...(workflow.execution_spec || { description: '' }),
+                        agent_guidance: e.target.value || undefined
+                      }
+                    })
+                  }
+                  placeholder="Guidance for agent orchestration (optional). Example: 'During parallel audits, allocate separate worker agents...'"
+                />
+              </div>
+
+              {/* Conditional Branches */}
+              {(workflow.execution_spec?.flow_pattern === 'conditional' ||
+                workflow.execution_spec?.flow_pattern === 'mixed') && (
+                <div className="rounded-md border border-slate-700 bg-slate-900/40 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-300">Conditional Branches</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const branches = workflow.execution_spec?.conditional_branches || [];
+                        onWorkflowChange({
+                          ...workflow,
+                          execution_spec: {
+                            ...(workflow.execution_spec || { description: '' }),
+                            conditional_branches: [...branches, { condition: '', target_step: '', description: '' }]
+                          }
+                        });
+                      }}
+                      className="text-xs text-brand hover:text-brand-light"
+                    >
+                      + Add Branch
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {(workflow.execution_spec?.conditional_branches || []).map((branch, idx) => (
+                      <div key={idx} className="rounded border border-slate-700 bg-slate-950/60 p-2">
+                        <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-slate-400">Condition</label>
+                            <input
+                              className="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs outline-none focus:border-brand"
+                              value={branch.condition}
+                              onChange={(e) => {
+                                const branches = [...(workflow.execution_spec?.conditional_branches || [])];
+                                branches[idx] = { ...branch, condition: e.target.value };
+                                onWorkflowChange({
+                                  ...workflow,
+                                  execution_spec: {
+                                    ...(workflow.execution_spec || { description: '' }),
+                                    conditional_branches: branches
+                                  }
+                                });
+                              }}
+                              placeholder="e.g., score < 0.8"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-slate-400">Target Step ID</label>
+                            <input
+                              className="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs outline-none focus:border-brand"
+                              value={branch.target_step}
+                              onChange={(e) => {
+                                const branches = [...(workflow.execution_spec?.conditional_branches || [])];
+                                branches[idx] = { ...branch, target_step: e.target.value };
+                                onWorkflowChange({
+                                  ...workflow,
+                                  execution_spec: {
+                                    ...(workflow.execution_spec || { description: '' }),
+                                    conditional_branches: branches
+                                  }
+                                });
+                              }}
+                              placeholder="step_id"
+                            />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1 flex flex-col gap-1">
+                              <label className="text-xs text-slate-400">Description (optional)</label>
+                              <input
+                                className="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs outline-none focus:border-brand"
+                                value={branch.description || ''}
+                                onChange={(e) => {
+                                  const branches = [...(workflow.execution_spec?.conditional_branches || [])];
+                                  branches[idx] = { ...branch, description: e.target.value || undefined };
+                                  onWorkflowChange({
+                                    ...workflow,
+                                    execution_spec: {
+                                      ...(workflow.execution_spec || { description: '' }),
+                                      conditional_branches: branches
+                                    }
+                                  });
+                                }}
+                                placeholder="Description"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const branches = workflow.execution_spec?.conditional_branches || [];
+                                onWorkflowChange({
+                                  ...workflow,
+                                  execution_spec: {
+                                    ...(workflow.execution_spec || { description: '' }),
+                                    conditional_branches: branches.filter((_, i) => i !== idx)
+                                  }
+                                });
+                              }}
+                              className="rounded bg-red-900/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/60"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Parallel Details */}
+              {(workflow.execution_spec?.flow_pattern === 'parallel' ||
+                workflow.execution_spec?.flow_pattern === 'mixed') && (
+                <div className="rounded-md border border-slate-700 bg-slate-900/40 p-3">
+                  <label className="text-xs font-semibold text-slate-300">Parallel Details</label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-slate-400">Parallel Steps (comma-separated step IDs)</label>
+                      <input
+                        className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                        value={workflow.execution_spec?.parallel_details?.parallel_steps?.join(', ') || ''}
+                        onChange={(e) =>
+                          onWorkflowChange({
+                            ...workflow,
+                            execution_spec: {
+                              ...(workflow.execution_spec || { description: '' }),
+                              parallel_details: {
+                                ...workflow.execution_spec?.parallel_details,
+                                parallel_steps: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                                merge_strategy: workflow.execution_spec?.parallel_details?.merge_strategy || 'all'
+                              }
+                            }
+                          })
+                        }
+                        placeholder="e.g., step1, step2, step3"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-slate-400">Merge Strategy</label>
+                      <select
+                        className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                        value={workflow.execution_spec?.parallel_details?.merge_strategy || 'all'}
+                        onChange={(e) =>
+                          onWorkflowChange({
+                            ...workflow,
+                            execution_spec: {
+                              ...(workflow.execution_spec || { description: '' }),
+                              parallel_details: {
+                                ...workflow.execution_spec?.parallel_details,
+                                parallel_steps: workflow.execution_spec?.parallel_details?.parallel_steps || [],
+                                merge_strategy: e.target.value as 'all' | 'any' | 'majority'
+                              }
+                            }
+                          })
+                        }
+                      >
+                        <option value="all">All (wait for all)</option>
+                        <option value="any">Any (first to complete)</option>
+                        <option value="majority">Majority</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Cycle Details */}
               {(workflow.execution_spec?.flow_pattern === 'cycle' ||
                 workflow.execution_spec?.flow_pattern === 'mixed') && (
@@ -410,12 +603,37 @@ export function WorkflowEditor({
                               cycle_details: {
                                 ...workflow.execution_spec?.cycle_details,
                                 cycle_steps: workflow.execution_spec?.cycle_details?.cycle_steps || [],
-                                exit_condition: e.target.value
+                                exit_condition: e.target.value,
+                                max_iterations: workflow.execution_spec?.cycle_details?.max_iterations
                               }
                             }
                           })
                         }
                         placeholder="e.g., seo_score > 0.8 AND accuracy_score > 0.8"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-slate-400">Max Iterations (optional)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="rounded-md border border-slate-800 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/50"
+                        value={workflow.execution_spec?.cycle_details?.max_iterations || ''}
+                        onChange={(e) =>
+                          onWorkflowChange({
+                            ...workflow,
+                            execution_spec: {
+                              ...(workflow.execution_spec || { description: '' }),
+                              cycle_details: {
+                                ...workflow.execution_spec?.cycle_details,
+                                cycle_steps: workflow.execution_spec?.cycle_details?.cycle_steps || [],
+                                exit_condition: workflow.execution_spec?.cycle_details?.exit_condition || '',
+                                max_iterations: e.target.value ? parseInt(e.target.value, 10) : undefined
+                              }
+                            }
+                          })
+                        }
+                        placeholder="e.g., 6"
                       />
                     </div>
                   </div>

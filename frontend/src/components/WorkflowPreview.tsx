@@ -20,6 +20,13 @@ export function WorkflowPreview({ workflow, personas, personaSpecs }: WorkflowPr
     const personaSpec = personaSpecs.get(step.persona_id);
     const spec = personaSpec?.specification as Record<string, unknown> | undefined;
     
+    // Handle handoff_expectations - can be array of strings or array of objects
+    const handoffExpectationsRaw = spec?.handoff_expectations;
+    let handoffExpectations: Array<string | Record<string, unknown>> | undefined;
+    if (Array.isArray(handoffExpectationsRaw)) {
+      handoffExpectations = handoffExpectationsRaw;
+    }
+    
     return {
       personaName: persona?.name || step.persona_id,
       stepId: step.id,
@@ -27,7 +34,7 @@ export function WorkflowPreview({ workflow, personas, personaSpecs }: WorkflowPr
       condition: step.condition,
       mission: spec?.mission as string | undefined,
       inputs: spec?.inputs as string[] | undefined,
-      handoffExpectations: spec?.handoff_expectations as string[] | undefined,
+      handoffExpectations,
       workflowSteps: spec?.workflow as string[] | undefined
     };
   };
@@ -138,9 +145,27 @@ export function WorkflowPreview({ workflow, personas, personaSpecs }: WorkflowPr
                   <div className="mt-2">
                     <div className="text-xs font-semibold text-slate-300">Output/Handoff:</div>
                     <ul className="mt-1 list-inside list-disc space-y-1 text-xs text-slate-400">
-                      {details.handoffExpectations.map((expectation, idx) => (
-                        <li key={idx}>{expectation}</li>
-                      ))}
+                      {details.handoffExpectations.map((expectation, idx) => {
+                        // Handle both string and object expectations
+                        if (typeof expectation === 'string') {
+                          return <li key={idx}>{expectation}</li>;
+                        }
+                        // For objects, render structured information
+                        const obj = expectation as Record<string, unknown>;
+                        const outputKey = obj.output_key as string | undefined;
+                        const description = obj.description as string | undefined;
+                        return (
+                          <li key={idx} className="ml-4">
+                            {outputKey && (
+                              <span className="font-mono font-semibold text-slate-300">{outputKey}:</span>
+                            )}
+                            {description && <span className="ml-2">{description}</span>}
+                            {!outputKey && !description && (
+                              <span className="italic text-slate-500">Complex handoff expectation (see JSON)</span>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}

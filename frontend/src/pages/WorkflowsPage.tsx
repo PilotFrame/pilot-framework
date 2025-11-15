@@ -18,6 +18,7 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowDefinition | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const canCallApi = config.baseUrl.trim().length > 0 && config.token.trim().length > 0;
 
@@ -88,11 +89,22 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
         if (!workflowData.steps) {
           workflowData.steps = [];
         }
+        // Ensure execution_spec exists if workflow has one
+        if (workflowData.execution_spec && !workflowData.execution_spec.description) {
+          workflowData.execution_spec.description = '';
+        }
         setSelectedWorkflowId(id);
         setWorkflow(workflowData);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to load workflow:', response.status, response.statusText, errorText);
+        setStatusMessage(`Failed to load workflow: ${response.status} ${response.statusText}`);
+        setTimeout(() => setStatusMessage(null), 5000);
       }
     } catch (error) {
       console.error('Failed to load workflow:', error);
+      setStatusMessage(`Failed to load workflow: ${(error as Error).message}`);
+      setTimeout(() => setStatusMessage(null), 5000);
     }
   };
 
@@ -121,6 +133,11 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
 
   return (
     <div className="flex flex-col gap-6">
+      {statusMessage && (
+        <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-red-400">
+          {statusMessage}
+        </div>
+      )}
       {!canCallApi ? (
         <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-4">
           <div className="flex h-60 items-center justify-center text-sm text-slate-500">
