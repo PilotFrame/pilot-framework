@@ -110,7 +110,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         inputSchema: Record<string, unknown>;
       }> = [
         {
-          name: 'persona.list',
+          name: 'persona_list',
           description: 'List all available personas with their IDs, names, and tags.',
           inputSchema: {
             type: 'object',
@@ -123,7 +123,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
           }
         },
         ...personas.map((p) => ({
-          name: `persona.${p.id}.get_specification`,
+          name: `persona_${p.id}_get_specification`,
           description: `Get the specification and instructions for persona: ${p.name}`,
           inputSchema: {
             type: 'object',
@@ -149,7 +149,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         if (response.ok) {
           const body = (await response.json()) as { data: Array<{ id: string; name: string }> };
           const workflowTools = body.data.map((wf) => ({
-            name: `workflow.${wf.id}`,
+            name: `workflow_${wf.id}`,
             description: `Get the complete workflow definition and execution guide for: ${wf.name}`,
             inputSchema: {
               type: 'object',
@@ -181,8 +181,25 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       const { name, arguments: args } = params || {};
       const personas = await loadPersonas();
 
-      // Handle persona.list
-      if (name === 'persona.list') {
+      // Normalize method name: strip VS Code MCP prefix
+      // Handles: mcp_pilotframe_persona_list -> persona_list
+      //          persona_list -> persona_list
+      const normalizeMethodName = (methodName: string): string => {
+        let normalized = methodName;
+        // Strip common VS Code MCP prefixes
+        if (normalized.startsWith('mcp_pilotframe_')) {
+          normalized = normalized.replace('mcp_pilotframe_', '');
+        }
+        if (normalized.startsWith('mcp_')) {
+          normalized = normalized.replace('mcp_', '');
+        }
+        return normalized;
+      };
+
+      const normalizedName = normalizeMethodName(name || '');
+
+      // Handle persona_list
+      if (normalizedName === 'persona_list') {
         const filterTag = args?.filter_by_tag;
         let filtered = personas;
         if (filterTag) {
@@ -192,7 +209,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
           id: p.id,
           name: p.name,
           tags: p.tags || [],
-          tool_name: `persona.${p.id}.get_specification`
+          tool_name: `persona_${p.id}_get_specification`
         }));
         return res.json({
           jsonrpc: '2.0',
@@ -209,9 +226,9 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         });
       }
 
-      // Handle persona.{id}.get_specification
-      if (name?.startsWith('persona.') && name.endsWith('.get_specification')) {
-        const personaId = name.replace('persona.', '').replace('.get_specification', '');
+      // Handle persona_{id}_get_specification
+      if (normalizedName.startsWith('persona_') && normalizedName.endsWith('_get_specification')) {
+        const personaId = normalizedName.replace('persona_', '').replace('_get_specification', '');
         const persona = personas.find((p) => p.id === personaId);
         
         if (!persona) {
@@ -258,9 +275,9 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         });
       }
 
-      // Handle workflow.{id}
-      if (name?.startsWith('workflow.')) {
-        const workflowId = name.replace('workflow.', '');
+      // Handle workflow_{id}
+      if (normalizedName.startsWith('workflow_')) {
+        const workflowId = normalizedName.replace('workflow_', '');
         const controlPlaneUrl = appConfig.NODE_ENV === 'development' ? 'http://localhost:4000' : process.env.CONTROL_PLANE_URL || 'http://localhost:4000';
         
         const response = await fetch(new URL(`/api/workflows/${workflowId}`, controlPlaneUrl).toString(), {
@@ -323,7 +340,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
           const persona = personas.find((p) => p.id === step.persona_id);
           guide += `### Step ${step.order}: ${step.id}\n\n`;
           guide += `**Persona**: ${persona?.name || step.persona_id} (\`${step.persona_id}\`)\n\n`;
-          guide += `**Tool to Call**: \`persona.${step.persona_id}.get_specification\`\n\n`;
+          guide += `**Tool to Call**: \`persona_${step.persona_id}_get_specification\`\n\n`;
           if (step.condition) {
             guide += `**Step Condition**: ${step.condition}\n\n`;
           }
@@ -350,7 +367,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         id,
         error: {
           code: -32601,
-          message: `Method not found: ${name}`
+          message: `Method not found: ${name} (normalized: ${normalizedName})`
         }
       });
     }
@@ -473,7 +490,7 @@ router.get('/tools', requireAuth, async (_req: Request, res: Response) => {
       inputSchema: Record<string, unknown>;
     }> = [
       {
-        name: 'persona.list',
+        name: 'persona_list',
         description: 'List all available personas with their IDs, names, and tags.',
         inputSchema: {
           type: 'object',
@@ -486,7 +503,7 @@ router.get('/tools', requireAuth, async (_req: Request, res: Response) => {
         }
       },
       ...personas.map((p) => ({
-        name: `persona.${p.id}.get_specification`,
+        name: `persona_${p.id}_get_specification`,
         description: `Get the specification and instructions for persona: ${p.name}`,
         inputSchema: {
           type: 'object',
@@ -512,7 +529,7 @@ router.get('/tools', requireAuth, async (_req: Request, res: Response) => {
       if (response.ok) {
         const body = (await response.json()) as { data: Array<{ id: string; name: string }> };
         const workflowTools = body.data.map((wf) => ({
-          name: `workflow.${wf.id}`,
+            name: `workflow_${wf.id}`,
           description: `Get the complete workflow definition and execution guide for: ${wf.name}`,
           inputSchema: {
             type: 'object',

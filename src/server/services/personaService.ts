@@ -155,7 +155,16 @@ export async function createPersonaSpec(spec: PersonaSpec): Promise<PersonaSpec>
     return result.rows[0].spec;
   }
 
+  // Ensure metadata has timestamps
   const metadata = (spec.metadata ?? {}) as Record<string, unknown>;
+  if (!metadata.created_at) {
+    metadata.created_at = now;
+  }
+  if (!metadata.updated_at) {
+    metadata.updated_at = now;
+  }
+  spec.metadata = metadata;
+
   const record: PersonaRecord = {
     slug,
     spec,
@@ -163,7 +172,27 @@ export async function createPersonaSpec(spec: PersonaSpec): Promise<PersonaSpec>
     updatedAt: typeof metadata.updated_at === 'string' ? (metadata.updated_at as string) : now
   };
 
+  // Save to in-memory store
   inMemoryStore.set(slug, record);
+
+  // ALSO save to file for persistence
+  const filePath = path.join(examplePersonaDir, `${slug}.json`);
+  try {
+    // Ensure directory exists
+    if (!fs.existsSync(examplePersonaDir)) {
+      fs.mkdirSync(examplePersonaDir, { recursive: true });
+    }
+    
+    // Write to file with pretty formatting
+    fs.writeFileSync(filePath, JSON.stringify(spec, null, 2), 'utf-8');
+    console.log(`[PersonaService] Saved persona "${slug}" to ${filePath}`);
+    
+    // Also update the example cache so it's immediately available
+    exampleCache.set(slug, record);
+  } catch (error) {
+    console.error(`[PersonaService] Failed to save persona "${slug}" to file:`, error);
+    // Don't throw - at least it's in memory
+  }
 
   return record.spec;
 }

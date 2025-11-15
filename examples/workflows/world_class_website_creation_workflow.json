@@ -1,0 +1,148 @@
+{
+  "id": "world_class_website_creation_workflow",
+  "name": "World Class Website Creation Workflow",
+  "steps": [
+    {
+      "id": "collect_brief",
+      "persona_id": "customer_engagement_persona",
+      "order": 1,
+      "label": "Collect Client Brief"
+    },
+    {
+      "id": "define_architecture",
+      "persona_id": "architect_persona",
+      "order": 2,
+      "label": "Define Architecture Blueprint"
+    },
+    {
+      "id": "design_system",
+      "persona_id": "creative_designer_persona",
+      "order": 3,
+      "label": "Design System Creation"
+    },
+    {
+      "id": "initial_build",
+      "persona_id": "astro_react_frontend_developer",
+      "order": 4,
+      "label": "Initial Frontend Implementation"
+    },
+    {
+      "id": "accessibility_review",
+      "persona_id": "accessibility_qa_reviewer",
+      "order": 5,
+      "label": "Accessibility & QA Review"
+    },
+    {
+      "id": "performance_audit",
+      "persona_id": "performance_auditor",
+      "order": 6,
+      "label": "Performance Audit"
+    },
+    {
+      "id": "seo_analysis",
+      "persona_id": "seo_strategist",
+      "order": 7,
+      "label": "SEO Review & Strategy"
+    },
+    {
+      "id": "content_audit",
+      "persona_id": "content_strategist_writer",
+      "order": 8,
+      "label": "Content Refinement & Writing"
+    },
+    {
+      "id": "code_refinement",
+      "persona_id": "astro_react_frontend_developer",
+      "order": 9,
+      "label": "Code Refinement After Reviews"
+    },
+    {
+      "id": "final_approval",
+      "persona_id": "final_reviewer",
+      "order": 10,
+      "label": "Final Review & Approval"
+    }
+  ],
+  "execution_spec": {
+    "description": "Sequential setup (brief → architecture → design → initial build), followed by parallel audits (accessibility, performance, SEO, and content). Frontend Developer and Designer refine code iteratively until gates pass; Final Reviewer performs deterministic approval.",
+    "flow_pattern": "mixed",
+    "parallel_details": {
+      "parallel_steps": [
+        "accessibility_review",
+        "performance_audit",
+        "seo_analysis",
+        "content_audit"
+      ],
+      "merge_strategy": "all"
+    },
+    "cycle_details": {
+      "cycle_steps": [
+        "accessibility_review",
+        "performance_audit",
+        "seo_analysis",
+        "content_audit",
+        "code_refinement"
+      ],
+      "exit_condition": "accessibility_qa_report.accessibility_score >= 0.95 AND performance_report.performance_score >= 0.9 AND seo_report.lighthouse_seo_score >= 0.95 AND content_plan.content_completeness >= 0.9 AND confidence_score >= 0.9",
+      "max_iterations": 6
+    },
+    "conditional_branches": [
+      {
+        "condition": "accessibility_qa_report.accessibility_score < 0.95",
+        "target_step": "accessibility_review",
+        "description": "Re-run accessibility audit until gate passes."
+      },
+      {
+        "condition": "performance_report.performance_score < 0.9",
+        "target_step": "performance_audit",
+        "description": "Re-run performance audit until threshold met."
+      },
+      {
+        "condition": "seo_report.lighthouse_seo_score < 0.95",
+        "target_step": "seo_analysis",
+        "description": "Re-run SEO checks and content updates until consistent."
+      },
+      {
+        "condition": "content_plan.content_completeness < 0.9",
+        "target_step": "content_audit",
+        "description": "Re-run content refinement for missing sections or keyword balance."
+      }
+    ],
+    "agent_guidance": "During parallel audits, allocate separate worker agents for each reviewer persona. Merge reports deterministically before invoking frontend_developer.refine_codebase. The orchestrator should ensure synchronization of shared variables (scores and confidence).",
+    "execution_guidance": "1) Customer Engagement → 2) Architect → 3) Creative Designer → 4) Frontend Developer initial build → 5–8) Parallel audits → merge results → 9) Refine code → cycle until all persona gates pass → 10) Final Reviewer approves release."
+  },
+  "user_prompts": {
+    "collect_brief": "Ask client for project goals, tone, and core technical preferences.",
+    "refinement_cycle": "Present summarized reports; request confirmation before re-running developer refinements.",
+    "final_approval_check": "Confirm with human supervisor that deployment may proceed after final reviewer approval."
+  },
+  "metadata": {
+    "description": "Spec-led multi-persona workflow combining sequential planning and parallel refinement cycles for world-class websites.",
+    "tags": [
+      "workflow",
+      "mixed-flow",
+      "accessibility",
+      "performance",
+      "seo",
+      "content",
+      "design",
+      "approval"
+    ],
+    "created_by": "persona.bot@pilotframe.dev",
+    "created_at": "2025-11-12T17:05:00Z",
+    "personas_used": [
+      "customer_engagement_persona",
+      "architect_persona",
+      "creative_designer_persona",
+      "astro_react_frontend_developer",
+      "accessibility_qa_reviewer",
+      "performance_auditor",
+      "seo_strategist",
+      "content_strategist_writer",
+      "final_reviewer"
+    ],
+    "workflow_type": "specification-led",
+    "success_criteria": "Final Reviewer approves only after parallel cycle passes all gates with confidence ≥ 0.9.",
+    "updated_at": "2025-11-14T06:07:59.054Z"
+  }
+}

@@ -91,6 +91,7 @@ async function loadExamples(): Promise<{ personas: string; workflows: string }> 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  excludeFromHistory?: boolean;
 }
 
 export interface ChatResponse {
@@ -111,9 +112,31 @@ export interface ChatRequest {
     existingPersonas?: string[];
     existingWorkflows?: string[];
   };
+  attachedFiles?: Array<{
+    id?: string;
+    name: string;
+    type: 'persona' | 'workflow';
+    content: Record<string, unknown>;
+  }>;
 }
 
-function buildSystemPrompt(personaSchema: string, workflowSchema: string, examples: { personas: string; workflows: string }): string {
+function buildSystemPrompt(
+  personaSchema: string, 
+  workflowSchema: string, 
+  examples: { personas: string; workflows: string },
+  attachedFiles?: Array<{ id?: string; name: string; type: 'persona' | 'workflow'; content: Record<string, unknown> }>
+): string {
+  let attachedFilesContext = '';
+  if (attachedFiles && attachedFiles.length > 0) {
+    attachedFilesContext = `\n\nATTACHED FILES (User has provided these for context):\n`;
+    attachedFiles.forEach(file => {
+      attachedFilesContext += `\n--- ${file.name} (${file.type}) ---\n`;
+      attachedFilesContext += JSON.stringify(file.content, null, 2);
+      attachedFilesContext += '\n';
+    });
+    attachedFilesContext += `\n\nUse these attached files as reference when answering questions. They provide context about existing personas/workflows the user is working with. When the user asks questions about these attached personas/workflows, refer to their specifications directly.\n`;
+  }
+  
   return `You are an AI assistant helping users create PilotFrame personas and workflows through natural language conversation.
 
 Your goal is to:
@@ -134,7 +157,7 @@ ${examples.personas}
 
 EXAMPLE WORKFLOW:
 ${examples.workflows}
-
+${attachedFilesContext}
 CONVERSATION FLOW:
 1. Start by asking the user to briefly describe their requirement
 2. Based on the description, determine if it's a persona or workflow
@@ -172,7 +195,7 @@ export async function chatWithAssistant(
   const { personaSchema, workflowSchema } = loadSchemas();
   const examples = await loadExamples();
   
-  const systemPrompt = buildSystemPrompt(personaSchema, workflowSchema, examples);
+  const systemPrompt = buildSystemPrompt(personaSchema, workflowSchema, examples, request.attachedFiles);
   
   // Filter out messages marked as excluded from history
   const filteredHistory = conversationHistory.filter(msg => !msg.excludeFromHistory);

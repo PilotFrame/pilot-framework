@@ -1,0 +1,112 @@
+{
+  "id": "content_production_workflow",
+  "name": "Content Production Workflow",
+  "steps": [
+    {
+      "id": "research_trending_topics",
+      "persona_id": "research_analyst_persona",
+      "order": 1,
+      "label": "Research Trending Topics"
+    },
+    {
+      "id": "plan_schedule",
+      "persona_id": "content_editor_persona",
+      "order": 2,
+      "label": "Plan Editorial Schedule"
+    },
+    {
+      "id": "write_content",
+      "persona_id": "content_strategist_writer",
+      "order": 3,
+      "label": "Write MDX Content Drafts"
+    },
+    {
+      "id": "review_technical_accuracy",
+      "persona_id": "technical_article_reviewer",
+      "order": 4,
+      "label": "Review Technical Accuracy"
+    },
+    {
+      "id": "seo_validation",
+      "persona_id": "seo_strategist",
+      "order": 5,
+      "label": "Validate SEO & Structured Data"
+    },
+    {
+      "id": "update_templates_build",
+      "persona_id": "astro_react_frontend_developer",
+      "order": 6,
+      "label": "Integrate MDX & Update Templates"
+    },
+    {
+      "id": "final_content_approval",
+      "persona_id": "final_reviewer",
+      "order": 7,
+      "label": "Final Review & Publication Approval"
+    }
+  ],
+  "execution_spec": {
+    "description": "Sequential creation of research → schedule → draft → technical review, followed by parallel SEO validation and frontend integration. The cycle repeats until all content scores ≥0.9 before Final Reviewer approval and publication.",
+    "flow_pattern": "mixed",
+    "parallel_details": {
+      "parallel_steps": [
+        "seo_validation",
+        "update_templates_build"
+      ],
+      "merge_strategy": "all"
+    },
+    "cycle_details": {
+      "cycle_steps": [
+        "review_technical_accuracy",
+        "seo_validation",
+        "update_templates_build"
+      ],
+      "exit_condition": "technical_review_report.overall_score >= 0.9 AND seo_report.lighthouse_seo_score >= 0.9 AND codebase_manifest.confidence_score >= 0.9",
+      "max_iterations": 5
+    },
+    "conditional_branches": [
+      {
+        "condition": "research_topics.confidence_score < 0.9",
+        "target_step": "research_trending_topics",
+        "description": "Re-run research phase if new trends or insufficient confidence."
+      },
+      {
+        "condition": "technical_review_report.overall_score < 0.9",
+        "target_step": "review_technical_accuracy",
+        "description": "Re-run technical validation until errors resolved."
+      },
+      {
+        "condition": "seo_report.lighthouse_seo_score < 0.9",
+        "target_step": "seo_validation",
+        "description": "Repeat SEO validation until schema and keywords correct."
+      }
+    ],
+    "execution_guidance": "1) Research Analyst discovers trending topics → 2) Content Editor plans calendar → 3) Writer drafts MDX → 4) Technical Reviewer validates code → 5) SEO Strategist checks meta/schema → 6) Frontend Developer integrates pages → 7) Final Reviewer approves for publication. Repeat cycle until all gates pass."
+  },
+  "metadata": {
+    "description": "Independent sub‑workflow for continuous blog/service/article production, ensuring deterministic MDX templates and structured data integration.",
+    "tags": [
+      "workflow",
+      "content-production",
+      "mixed-flow",
+      "astro",
+      "mdx",
+      "seo",
+      "research"
+    ],
+    "created_by": "persona.bot@pilotframe.dev",
+    "created_at": "2025-11-12T19:35:00Z",
+    "personas_used": [
+      "research_analyst_persona",
+      "content_editor_persona",
+      "content_strategist_writer",
+      "technical_article_reviewer",
+      "seo_strategist",
+      "astro_react_frontend_developer",
+      "final_reviewer"
+    ],
+    "workflow_type": "content-production",
+    "success_criteria": "Final Reviewer approves only when all content and review personas reach confidence ≥0.9.",
+    "updated_at": "2025-11-15T14:01:44.326Z"
+  }
+}

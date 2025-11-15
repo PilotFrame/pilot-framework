@@ -66,6 +66,7 @@ assistantRouter.post('/chat', async (req: AuthenticatedRequest, res, next) => {
       ? body.conversationId.trim() 
       : undefined;
     const context = body.context;
+    const attachedFiles = body.attachedFiles; // Array of { id?, name, type, content }
     
     // Validate message field - backend controls the type
     if (message === undefined || message === null) {
@@ -148,7 +149,8 @@ assistantRouter.post('/chat', async (req: AuthenticatedRequest, res, next) => {
       {
         message: messageStr.trim(),
         conversationId: conversation.id,
-        context
+        context,
+        attachedFiles: attachedFiles && Array.isArray(attachedFiles) ? attachedFiles : undefined
       },
       conversationHistory
     );

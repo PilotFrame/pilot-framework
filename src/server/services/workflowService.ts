@@ -176,14 +176,45 @@ export async function createWorkflow(definition: WorkflowDefinition): Promise<Wo
     return result.rows[0].definition;
   }
 
+  // Ensure metadata has timestamps
+  const metadata = (definition.metadata ?? {}) as Record<string, unknown>;
+  if (!metadata.created_at) {
+    metadata.created_at = now;
+  }
+  if (!metadata.updated_at) {
+    metadata.updated_at = now;
+  }
+  definition.metadata = metadata;
+
   const record: WorkflowRecord = {
     slug,
     definition,
-    createdAt: now,
-    updatedAt: now
+    createdAt: typeof metadata.created_at === 'string' ? (metadata.created_at as string) : now,
+    updatedAt: typeof metadata.updated_at === 'string' ? (metadata.updated_at as string) : now
   };
 
+  // Save to in-memory store
   inMemoryWorkflows.set(slug, record);
+
+  // ALSO save to file for persistence
+  const exampleWorkflowDir = path.join(process.cwd(), 'examples', 'workflows');
+  const filePath = path.join(exampleWorkflowDir, `${slug}.json`);
+  try {
+    // Ensure directory exists
+    if (!fs.existsSync(exampleWorkflowDir)) {
+      fs.mkdirSync(exampleWorkflowDir, { recursive: true });
+    }
+    
+    // Write to file with pretty formatting
+    fs.writeFileSync(filePath, JSON.stringify(definition, null, 2), 'utf-8');
+    console.log(`[WorkflowService] Saved workflow "${slug}" to ${filePath}`);
+    
+    // Also update the example cache so it's immediately available
+    exampleCache.set(slug, record);
+  } catch (error) {
+    console.error(`[WorkflowService] Failed to save workflow "${slug}" to file:`, error);
+    // Don't throw - at least it's in memory
+  }
 
   return record.definition;
 }
