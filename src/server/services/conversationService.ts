@@ -160,13 +160,14 @@ export function createConversation(): Conversation {
 
 export function getConversation(id: string): Conversation | null {
   // Check in-memory cache first
-  let conversation = conversations.get(id);
+  let conversation: Conversation | undefined = conversations.get(id);
   
   // If not in cache, try loading from file
   if (!conversation) {
-    conversation = loadConversationFromFile(id);
-    if (conversation) {
-      conversations.set(id, conversation);
+    const loaded = loadConversationFromFile(id);
+    if (loaded) {
+      conversation = loaded;
+      conversations.set(id, loaded);
       console.log(`[ConversationService] Loaded conversation ${id} from file`);
     }
   }

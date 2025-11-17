@@ -5,6 +5,8 @@ import { ConfigPanel } from './components/ConfigPanel';
 import { Navigation } from './components/Navigation';
 import { AssistantPage } from './pages/AssistantPage';
 import { PersonasPage } from './pages/PersonasPage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { WorkflowsPage } from './pages/WorkflowsPage';
 import { McpTestPage } from './pages/McpTestPage';
 import type { ApiConfig } from './types';
@@ -51,6 +53,20 @@ export default function App() {
             <Route
               path="/workflows"
               element={<WorkflowsPage config={config} connectionStatus={connectionStatus} />}
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProjectsPage
+                  config={config}
+                  connectionStatus={connectionStatus}
+                  onConnectionStatusChange={setConnectionStatus}
+                />
+              }
+            />
+            <Route
+              path="/projects/:id"
+              element={<ProjectDetailPage config={config} />}
             />
             <Route
               path="/mcp-test"

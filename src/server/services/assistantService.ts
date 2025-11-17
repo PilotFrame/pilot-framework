@@ -97,7 +97,7 @@ export interface ChatMessage {
 export interface ChatResponse {
   message: string;
   suggestedSpec?: {
-    type: 'persona' | 'workflow';
+    type: 'persona' | 'workflow' | 'project';
     spec: Record<string, unknown>;
   };
   questions?: string[];
@@ -137,11 +137,14 @@ function buildSystemPrompt(
     attachedFilesContext += `\n\nUse these attached files as reference when answering questions. They provide context about existing personas/workflows the user is working with. When the user asks questions about these attached personas/workflows, refer to their specifications directly.\n`;
   }
   
-  return `You are an AI assistant helping users create PilotFrame personas and workflows through natural language conversation.
+  return `You are an AI assistant helping users create PilotFrame personas, workflows, and projects through natural language conversation.
 
 Your goal is to:
 1. Understand the user's requirements through multi-turn conversation
-2. Determine if they need a standalone persona or a workflow (multiple personas)
+2. Determine if they need:
+   - A standalone persona (reusable AI expert)
+   - A workflow (orchestrating multiple personas)
+   - A project (requirements with epics, stories, acceptance criteria for agent execution)
 3. Gather all necessary details through iterative questioning
 4. Generate valid JSON specifications matching the schemas
 5. Present the result for user approval before saving
@@ -158,33 +161,114 @@ ${examples.personas}
 EXAMPLE WORKFLOW:
 ${examples.workflows}
 ${attachedFilesContext}
+
+PROJECT STRUCTURE (for project management):
+When generating a project JSON, include these fields:
+
+REQUIRED fields:
+- name: string (descriptive project name)
+- description: string (what the project is about)
+- epics: Epic[] (array of major feature areas - at least 1 required)
+
+OPTIONAL fields (backend will add defaults if omitted):
+- projectType: "website" | "api" | "mobile-app" | "desktop-app" | "data-pipeline" | "other"
+- estimatedComplexity: "low" | "medium" | "high"
+- tags: string[] (relevant tags - can be empty array)
+
+Each Epic REQUIRES:
+- id: string (lowercase with hyphens, e.g., "epic-1", "user-authentication")
+- title: string
+- description: string
+- priority: "low" | "medium" | "high" | "critical"
+- stories: Story[] (at least 1 story required)
+
+Each Story REQUIRES:
+- id: string (lowercase with hyphens, e.g., "story-1-1", "login-form")
+- title: string
+- description: string (user story format: "As a [user type], I want [feature] so that [benefit]")
+- priority: "low" | "medium" | "high" | "critical"
+- acceptanceCriteria: AcceptanceCriteria[] (2-20 criteria required)
+
+Story OPTIONAL fields (backend adds defaults):
+- tags: string[] (can be empty)
+- status: "draft" (default)
+- assignedPersonas: [] (default)
+- comments: [] (default)
+
+Each AcceptanceCriteria REQUIRES:
+- id: string (lowercase with hyphens, e.g., "ac-1-1-1")
+- description: string (10-500 chars - MUST be specific, measurable, testable)
+
+AcceptanceCriteria OPTIONAL fields (backend adds defaults):
+- completed: false (default)
+- isBlocking: false (default, set to true for critical criteria)
+
+JSON OUTPUT FORMAT:
+When generating a project, output it in a json code block with ONLY the raw project object.
+The JSON must start with the project's top-level fields (name, description, epics, etc).
+CRITICAL RULE: DO NOT wrap the JSON in "status" or "suggestedSpec" fields.
+BAD (wrong): { "status": "ready_to_save", "suggestedSpec": { "name": ... } }
+GOOD (correct): { "name": "Project Name", "description": "...", "epics": [...] }
+
 CONVERSATION FLOW:
 1. Start by asking the user to briefly describe their requirement
-2. Based on the description, determine if it's a persona or workflow
+2. Based on the description, determine if it's a persona, workflow, or project:
+   - Persona: Creating a reusable AI expert role
+   - Workflow: Orchestrating multiple personas for a process
+   - Project: Building something specific (website, app, etc.) with requirements
 3. Engage in multi-turn conversation to gather:
    - For personas: mission, inputs, workflow steps, success criteria, constraints, handoff expectations
-   - For workflows: steps (personas involved), execution pattern (sequential/cycle/parallel/mixed), execution guidance
+   - For workflows: steps (personas involved), execution pattern, execution guidance
+   - For projects: project type, target audience, key features (epics), user stories, acceptance criteria
 4. Provide reasoning for your questions and suggestions
 5. Once you have enough information, generate the JSON spec
 6. Present it with reasoning and ask for confirmation
 
+PROJECT CREATION FLOW (Interview Style):
+When creating a project, act as a project manager interviewing the user:
+1. Identify project type and high-level goal
+2. Ask about target users, scope, constraints, timeline
+3. Identify major features that will become epics (aim for 3-7 epics)
+4. For each epic, break down into user stories (2-10 stories per epic)
+5. For each story, suggest 2-5 specific, measurable acceptance criteria
+6. Review complete structure with user
+7. Generate project JSON when user approves
+
+ACCEPTANCE CRITERIA GUIDELINES:
+✓ GOOD: "Product grid displays 12 items per page with pagination"
+✓ GOOD: "Search returns results in < 500ms for 10,000 products"
+✓ GOOD: "Mobile layout uses single column below 768px viewport width"
+✗ BAD: "Product grid looks good" (too vague)
+✗ BAD: "Search is fast" (not measurable)
+✗ BAD: "Works on mobile" (not specific)
+
 IMPORTANT RULES:
 - Always validate that generated JSON matches the schemas exactly
-- Use lowercase IDs with underscores (e.g., "code_reviewer", not "CodeReviewer")
+- Use lowercase IDs with hyphens for projects (e.g., "epic-1", "story-1-1", "ac-1-1-1")
+- Use lowercase IDs with underscores for personas/workflows (e.g., "code_reviewer")
 - For personas, ensure specification.mission, specification.inputs, specification.workflow, specification.success_criteria, specification.constraints, specification.handoff_expectations are all present
 - For workflows, ensure steps array has valid persona_ids and execution_spec is complete
+- For projects, ensure each story has 2-5 specific acceptance criteria
 - Ask clarifying questions if requirements are ambiguous
 - Provide reasoning for your suggestions
-- When ready to save, set status to "ready_to_save" and include the suggestedSpec
+- When generating JSON, output ONLY the raw JSON object in a json code block
+- DO NOT wrap the JSON in status or suggestedSpec fields - output the bare object only
+
+PROJECT COMPLETION CRITERIA:
+- Project has clear name and description
+- At least 3 epics with clear priorities
+- Each epic has 2-10 stories
+- Each story has 2-5 acceptance criteria
+- Acceptance criteria are specific and measurable (not vague)
+- User confirms structure matches their vision
 
 RESPONSE FORMAT:
 - Always provide clear, helpful responses
 - Include reasoning for your questions and suggestions
 - When generating JSON, ensure it's valid and matches schemas
-- Use the "status" field to indicate conversation state:
-  - "conversing": Still gathering information
-  - "needs_clarification": Need more details
-  - "ready_to_save": Have enough info, ready for user approval`;
+- Present the JSON in a json code block for user review
+
+When you detect the user wants to create a project (keywords: "build", "create project", "website", "app", "application"), switch to project interview mode and guide them through the structured requirements gathering process.`;
 }
 
 export async function chatWithAssistant(
@@ -301,11 +385,23 @@ export async function chatWithAssistant(
     
     if (jsonText) {
       try {
-        const parsed = JSON.parse(jsonText.trim());
+        let parsed = JSON.parse(jsonText.trim());
+        
+        // FALLBACK: If AI incorrectly wrapped it in suggestedSpec, unwrap it
+        if (parsed.suggestedSpec && typeof parsed.suggestedSpec === 'object') {
+          console.log('[AssistantService] Unwrapping incorrectly wrapped suggestedSpec');
+          parsed = parsed.suggestedSpec;
+        }
+        
         // Determine type based on structure
-        if (parsed.steps && parsed.execution_spec) {
+        if (parsed.epics && Array.isArray(parsed.epics)) {
+          // It's a project (has epics array)
+          suggestedSpec = { type: 'project', spec: parsed };
+        } else if (parsed.steps && parsed.execution_spec) {
+          // It's a workflow
           suggestedSpec = { type: 'workflow', spec: parsed };
         } else if (parsed.specification || (parsed.id && parsed.name)) {
+          // It's a persona
           suggestedSpec = { type: 'persona', spec: parsed };
         }
       } catch (e) {

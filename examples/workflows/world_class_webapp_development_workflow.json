@@ -1,0 +1,168 @@
+{
+  "id": "world_class_webapp_development_workflow",
+  "name": "World-Class Web Application Development Workflow (v2.0)",
+  "steps": [
+    {
+      "id": "step_1_architecture_design",
+      "persona_id": "architect_persona",
+      "order": 1,
+      "label": "Architecture Design Phase",
+      "metadata": {
+        "parallel_group": "planning_phase"
+      }
+    },
+    {
+      "id": "step_2_creative_design",
+      "persona_id": "creative_designer_persona",
+      "order": 2,
+      "label": "Design System & UX Phase",
+      "metadata": {
+        "parallel_group": "planning_phase"
+      }
+    },
+    {
+      "id": "step_3_backend_development",
+      "persona_id": "backend_engineer_persona",
+      "order": 3,
+      "label": ".NET Backend Development and API Integration"
+    },
+    {
+      "id": "step_4_frontend_development",
+      "persona_id": "astro_react_frontend_developer",
+      "order": 4,
+      "label": "Frontend Implementation & Integration"
+    },
+    {
+      "id": "step_5_devops_integration",
+      "persona_id": "devops_engineer_persona",
+      "order": 5,
+      "label": "DevOps IaC and CI/CD Automation"
+    },
+    {
+      "id": "step_6_accessibility_qa",
+      "persona_id": "accessibility_qa_reviewer",
+      "order": 6,
+      "label": "Accessibility & Functional QA Review",
+      "metadata": {
+        "cycle_group": "qa_cycle"
+      }
+    },
+    {
+      "id": "step_7_performance_audit",
+      "persona_id": "performance_auditor_persona",
+      "order": 7,
+      "label": "Performance Audit and Optimization",
+      "metadata": {
+        "cycle_group": "qa_cycle"
+      }
+    },
+    {
+      "id": "step_8_content_sync",
+      "persona_id": "content_editor_persona",
+      "order": 8,
+      "label": "Content Synchronization and Manifest Validation"
+    },
+    {
+      "id": "step_9_release_coordination",
+      "persona_id": "project_coordinator_persona",
+      "order": 9,
+      "label": "Release Preparation and Coordination"
+    }
+  ],
+  "execution_spec": {
+    "description": "Enterprise-ready mixed workflow orchestrating all personas for world-class web application delivery. Defines parallel, sequential, and cyclic flow patterns with deterministic metrics, fallbacks, and explicit post-cycle handoff.",
+    "flow_pattern": "mixed",
+    "parallel_details": {
+      "parallel_steps": [
+        "step_1_architecture_design",
+        "step_2_creative_design"
+      ],
+      "merge_strategy": "all"
+    },
+    "cycle_details": {
+      "cycle_steps": [
+        "step_6_accessibility_qa",
+        "step_7_performance_audit"
+      ],
+      "exit_condition": "accessibility_score >= 0.9 AND lighthouse_score >= 90 AND confidence_score >= 0.9",
+      "max_iterations": 5
+    },
+    "cycle_metrics": {
+      "accessibility_score": {
+        "source": "accessibility_qa_reviewer.accessibility_qa_report.metrics.accessibility_score",
+        "target_threshold": 0.9
+      },
+      "lighthouse_score": {
+        "source": "performance_auditor_persona.performance_audit_report.lighthouse.score",
+        "target_threshold": 90
+      },
+      "confidence_score": {
+        "aggregation": "min",
+        "sources": [
+          "accessibility_qa_reviewer.accessibility_qa_report.metadata.confidence_score",
+          "performance_auditor_persona.performance_audit_report.metadata.confidence_score"
+        ]
+      }
+    },
+    "confidence_strategy": {
+      "scope": "qa_cycle",
+      "aggregation": "min",
+      "sources": [
+        "accessibility_qa_reviewer",
+        "performance_auditor_persona"
+      ]
+    },
+    "cycle_limits": {
+      "max_iterations": 5,
+      "respect_persona_retry_policies": true
+    },
+    "cycle_fallback": {
+      "on_exhausted": {
+        "status": "failed",
+        "route_to_step": "step_9_release_coordination",
+        "note": "Mark release as blocked and require human validation before proceeding."
+      }
+    },
+    "conditional_branches": [
+      {
+        "condition": "accessibility_score < 0.9",
+        "target_step": "step_6_accessibility_qa",
+        "description": "Re-run accessibility and QA checks."
+      },
+      {
+        "condition": "lighthouse_score < 90",
+        "target_step": "step_7_performance_audit",
+        "description": "Re-run performance audit and optimization."
+      }
+    ],
+    "post_cycle": {
+      "handoff_step": "step_9_release_coordination",
+      "expected_inputs": [
+        "accessibility_qa_reviewer.accessibility_qa_report",
+        "performance_auditor_persona.performance_audit_report",
+        "devops_engineer_persona.deployment_summary"
+      ]
+    },
+    "execution_guidance": "Run architecture and design personas in parallel during planning, proceed sequentially through backend, frontend, and DevOps automation. Enter QA-performance cycle until thresholds pass. Aggregate metrics via min confidence rule; then hand off results to content and coordinator personas for release readiness validation and telemetry collection."
+  },
+  "metadata": {
+    "created_by": "workflow.bot@pilotframe.dev",
+    "created_at": "2025-11-15T21:35:00Z",
+    "template_version": "2.0",
+    "workflow_version": "2.0",
+    "region": "global",
+    "project_complexity_index": "high",
+    "supports_personas": [
+      "architect_persona",
+      "creative_designer_persona",
+      "backend_engineer_persona",
+      "astro_react_frontend_developer",
+      "devops_engineer_persona",
+      "accessibility_qa_reviewer",
+      "performance_auditor_persona",
+      "content_editor_persona",
+      "project_coordinator_persona"
+    ],
+    "updated_at": "2025-11-15T21:35:00Z"
+  }
+}

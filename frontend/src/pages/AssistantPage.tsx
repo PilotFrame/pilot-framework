@@ -19,8 +19,8 @@ type ChatMessage = {
   retrying?: boolean; // Track if retry is in progress
   excludeFromHistory?: boolean; // If true, this message won't be sent to API in future requests
   attachedFiles?: AttachedFile[]; // Attached persona/workflow files
-  extractedSpec?: { // Extracted persona/workflow spec from this message
-    type: 'persona' | 'workflow';
+  extractedSpec?: { // Extracted persona/workflow/project spec from this message
+    type: 'persona' | 'workflow' | 'project';
     spec: Record<string, unknown>;
   };
 };
@@ -36,7 +36,7 @@ type ConversationSummary = {
 type ChatResponse = {
   message: string;
   suggestedSpec?: {
-    type: 'persona' | 'workflow';
+    type: 'persona' | 'workflow' | 'project';
     spec: Record<string, unknown>;
   };
   questions?: string[];
@@ -89,7 +89,7 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
         {
           role: 'assistant',
           content:
-            "Hello! I'm here to help you create personas and workflows for PilotFrame. Please briefly describe what you'd like to create, and I'll guide you through the process.",
+            "Hello! I'm here to help you create personas, workflows, and projects for PilotFrame.\n\n- **Personas**: Reusable AI expert roles\n- **Workflows**: Multi-step processes orchestrating personas\n- **Projects**: Requirements with epics, stories, and acceptance criteria\n\nPlease briefly describe what you'd like to create, and I'll guide you through the process.",
           timestamp: new Date()
         }
       ]);
@@ -149,9 +149,17 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
     
     if (jsonText) {
       try {
-        const parsed = JSON.parse(jsonText.trim());
+        let parsed = JSON.parse(jsonText.trim());
+        
+        // Unwrap if AI incorrectly wrapped it in suggestedSpec
+        if (parsed.suggestedSpec && typeof parsed.suggestedSpec === 'object') {
+          parsed = parsed.suggestedSpec;
+        }
+        
         // Determine type based on structure
-        if (parsed.steps && parsed.execution_spec) {
+        if (parsed.epics && Array.isArray(parsed.epics)) {
+          return { type: 'project', spec: parsed };
+        } else if (parsed.steps && parsed.execution_spec) {
           return { type: 'workflow', spec: parsed };
         } else if (parsed.specification || (parsed.id && parsed.name)) {
           return { type: 'persona', spec: parsed };
@@ -572,7 +580,10 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
       setErrorMessage(null);
 
       const endpoint =
-        specToSave.type === 'persona' ? '/api/personas' : '/api/workflows';
+        specToSave.type === 'persona' ? '/api/personas' :
+        specToSave.type === 'workflow' ? '/api/workflows' :
+        '/api/projects';
+      
       const response = await fetch(new URL(endpoint, config.baseUrl).toString(), {
         method: 'POST',
         headers: {
@@ -590,8 +601,10 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
       // Navigate to the appropriate page
       if (specToSave.type === 'persona') {
         navigate('/personas');
-      } else {
+      } else if (specToSave.type === 'workflow') {
         navigate('/workflows');
+      } else {
+        navigate('/projects');
       }
     } catch (error) {
       setErrorMessage(`Failed to save: ${(error as Error).message}`);
@@ -614,8 +627,10 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
     // Navigate to the appropriate editor
     if (specToCopy.type === 'persona') {
       navigate('/personas');
-    } else {
+    } else if (specToCopy.type === 'workflow') {
       navigate('/workflows');
+    } else {
+      navigate('/projects');
     }
   }, [suggestedSpec, navigate]);
 
@@ -634,7 +649,7 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
       {
         role: 'assistant',
         content:
-          "Hello! I'm here to help you create personas and workflows for PilotFrame. Please briefly describe what you'd like to create, and I'll guide you through the process.",
+          "Hello! I'm here to help you create personas, workflows, and projects for PilotFrame.\n\n- **Personas**: Reusable AI expert roles\n- **Workflows**: Multi-step processes orchestrating personas\n- **Projects**: Requirements with epics, stories, and acceptance criteria\n\nPlease briefly describe what you'd like to create, and I'll guide you through the process.",
         timestamp: new Date()
       }
     ]);
@@ -650,7 +665,7 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
         <div>
           <h2 className="text-2xl font-bold text-white">AI Assistant</h2>
           <p className="text-sm text-slate-400">
-            Describe your requirements and I'll help you create personas and workflows
+            Describe your requirements and I'll help you create personas, workflows, and projects
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -900,7 +915,8 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
                 <div className="ml-0 w-full rounded-lg border border-green-800 bg-green-900/20 p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-sm font-semibold text-green-400">
-                      {message.extractedSpec.type === 'persona' ? 'Persona' : 'Workflow'} Specification
+                      {message.extractedSpec.type === 'persona' ? 'Persona' : 
+                       message.extractedSpec.type === 'workflow' ? 'Workflow' : 'Project'} Specification
                     </h4>
                     <div className="flex gap-2">
                       <button

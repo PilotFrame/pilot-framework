@@ -10,6 +10,7 @@ export function Navigation({ connectionStatus }: NavigationProps) {
   const navItems = [
     { path: '/personas', label: 'Personas', icon: '👤' },
     { path: '/workflows', label: 'Workflows', icon: '🔄' },
+    { path: '/projects', label: 'Projects', icon: '📋' },
     { path: '/assistant', label: 'Assistant', icon: '🤖' },
     { path: '/mcp-test', label: 'MCP Test', icon: '🔧' }
   ];

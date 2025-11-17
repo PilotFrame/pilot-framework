@@ -1,0 +1,50 @@
+{
+  "$comment": "PilotFrame Project Template - Use this as a reference when creating projects via the Assistant",
+  "name": "Project Name",
+  "description": "Clear description of what this project aims to build",
+  "createdBy": "user@example.com",
+  "projectType": "website",
+  "estimatedComplexity": "medium",
+  "tags": ["tag1", "tag2"],
+  "epics": [
+    {
+      "id": "epic-1",
+      "title": "Epic Title",
+      "description": "Epic description explaining the major feature area",
+      "priority": "high",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-15T10:00:00Z",
+      "updatedAt": "2025-11-15T10:00:00Z",
+      "stories": [
+        {
+          "id": "story-1-1",
+          "title": "Story Title",
+          "description": "As a [user type], I want [feature] so that [benefit]",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": ["frontend", "ui"],
+          "comments": [],
+          "createdAt": "2025-11-15T10:00:00Z",
+          "updatedAt": "2025-11-15T10:00:00Z",
+          "acceptanceCriteria": [
+            {
+              "id": "ac-1-1-1",
+              "description": "Specific, measurable criterion (e.g., 'Button displays with blue background color #0066FF')",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "ac-1-1-2",
+              "description": "Another specific criterion (e.g., 'Form validates email format before submission')",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

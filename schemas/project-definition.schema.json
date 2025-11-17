@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pilotframe.dev/schemas/project-definition.schema.json",
+  "title": "PilotFrame Project Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description", "epics"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+      "description": "Stable identifier (auto-generated if not provided)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Project name"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Project description"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "in_development", "completed", "archived"],
+      "default": "draft",
+      "description": "Project status (derived from epics)"
+    },
+    "projectType": {
+      "type": "string",
+      "enum": ["website", "api", "mobile-app", "desktop-app", "data-pipeline", "other"],
+      "description": "Type of project"
+    },
+    "conversationId": {
+      "type": "string",
+      "description": "Link to the creation conversation"
+    },
+    "workflowId": {
+      "type": "string",
+      "description": "Assigned workflow ID (by technical team)"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "User ID who created the project"
+    },
+    "technicalLead": {
+      "type": "string",
+      "description": "Technical lead assigned to the project"
+    },
+    "epics": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/epic"
+      },
+      "description": "List of project epics"
+    },
+    "estimatedComplexity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Estimated complexity level"
+    },
+    "targetLaunchDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Target launch date"
+    },
+    "actualLaunchDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Actual launch date"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      },
+      "maxItems": 20,
+      "description": "Project tags"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the project was published"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When development started"
+    },
+    "completedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the project was completed"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    }
+  },
+  "$defs": {
+    "epic": {
+      "type": "object",
+      "required": ["id", "title", "description", "priority", "stories"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "description": "Epic identifier"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Epic title"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Epic description"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Epic priority"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed"],
+          "default": "pending",
+          "description": "Epic status (derived from stories)"
+        },
+        "stories": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/story"
+          },
+          "description": "List of stories in this epic"
+        },
+        "estimatedStories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated number of stories"
+        },
+        "completedStories": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Number of completed stories"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When epic started"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When epic was completed"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "required": ["id", "title", "description", "acceptanceCriteria", "priority"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "description": "Story identifier"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Story title"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000,
+          "description": "Story description (user story or detailed spec)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "ready", "in_progress", "review", "blocked", "done"],
+          "default": "draft",
+          "description": "Story status"
+        },
+        "assignedPersonas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Assigned persona IDs"
+        },
+        "assignedAgents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Assigned agent IDs"
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/acceptanceCriteria"
+          },
+          "description": "List of acceptance criteria (2-20 items recommended)"
+        },
+        "storyPoints": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Story points estimation"
+        },
+        "estimatedHours": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated hours"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Story priority"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "maxItems": 10,
+          "description": "Story tags"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Story dependencies (other story IDs)"
+        },
+        "relatedStories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Related story IDs"
+        },
+        "comments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/comment"
+          },
+          "default": [],
+          "description": "Story comments"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When story started"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When story was completed"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "object",
+      "required": ["id", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "description": "Criteria identifier"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Specific, measurable, testable criteria (avoid vague descriptions)"
+        },
+        "completed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this criteria is completed"
+        },
+        "verifiedBy": {
+          "type": "string",
+          "description": "Persona or agent who verified this criteria"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "description": "When this criteria was verified"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Evidence or notes about verification"
+        },
+        "isBlocking": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a blocking criteria (must be complete before story is done)"
+        }
+      }
+    },
+    "comment": {
+      "type": "object",
+      "required": ["id", "content", "author", "authorType", "type", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Comment identifier"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000,
+          "description": "Comment content"
+        },
+        "author": {
+          "type": "string",
+          "description": "Persona, agent, or user who wrote the comment"
+        },
+        "authorType": {
+          "type": "string",
+          "enum": ["user", "persona", "agent"],
+          "description": "Type of author"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["update", "question", "decision", "blocker", "note"],
+          "description": "Comment type"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Comment timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        }
+      }
+    }
+  }
+}
+

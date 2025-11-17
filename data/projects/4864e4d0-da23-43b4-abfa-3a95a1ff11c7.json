@@ -1,0 +1,730 @@
+{
+  "id": "4864e4d0-da23-43b4-abfa-3a95a1ff11c7",
+  "name": "Tender Bidding Platform",
+  "description": "A secure digital platform that allows civil bodies to publish public tenders and citizens to submit bids with required documents and quoted prices. Supports reviewer audits and super admin oversight for transparency and compliance.",
+  "status": "draft",
+  "projectType": "website",
+  "createdBy": "dev-user",
+  "estimatedComplexity": "high",
+  "tags": [
+    "bidding",
+    "public-sector",
+    "civil-tenders",
+    "citizen-engagement",
+    "government-compliance",
+    "audit-log",
+    "admin-dashboard"
+  ],
+  "createdAt": "2025-11-16T11:54:25.498Z",
+  "updatedAt": "2025-11-16T11:54:25.498Z",
+  "epics": [
+    {
+      "id": "d00103fc-b5a3-4c2f-9a18-6e7af65d31cc",
+      "title": "User & Role Management",
+      "description": "Build secure user authentication, registration, and multi-role access system for citizens, civil body admins, reviewers, and super admins.",
+      "priority": "critical",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "771bb77a-4ef0-4ae7-afa9-2fb3751f570c",
+          "title": "User Registration & Verification",
+          "description": "Citizens and civil body admins can register accounts with email and OTP verification for identity validation.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "authentication",
+            "identity",
+            "registration"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "1c0e8aed-d0ed-4fd4-867b-555f6310f673",
+              "description": "Registration form validates all required fields including role and identity proof.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "e09659ba-9d59-444e-92fe-ed3050a83d8e",
+              "description": "OTP verification must be completed within 3 minutes of request.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "7a21919d-aeee-4335-af7a-74ed14cea9d8",
+              "description": "All email addresses stored must be unique; duplicate registration rejected.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "9d8eefd7-2b86-4c22-b1a5-d120ca12dc14",
+              "description": "Successful registration assigns the correct role automatically.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        },
+        {
+          "id": "66a5c350-2538-42bd-b75a-56ba18b104b7",
+          "title": "Role-Based Access Control",
+          "description": "Super admin defines and manages permission levels for all user roles.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "access-control",
+            "permissions",
+            "security"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "8c57ccfa-7053-4801-abb8-601df4b14e54",
+              "description": "Role-permission mappings stored centrally and versioned.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "75d2b157-2ae0-4ebd-9ba5-87e01cfcce9f",
+              "description": "Unauthorized access attempts are denied and logged.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "9563ece0-76e6-48d9-a048-e33fcac0b05b",
+              "description": "Audit log must track every change in permission assignment.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        },
+        {
+          "id": "6d1ea92d-0792-4c87-bfaf-8513a602a1ba",
+          "title": "Login & Session Management",
+          "description": "Secure JWT/session-based authentication and controlled timeouts for all logged-in users.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "login",
+            "sessions",
+            "security"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "fa01e8fe-cbc3-4e03-81ea-1846d512b271",
+              "description": "Session timeout after 30 minutes of inactivity.",
+              "completed": false,
+              "isBlocking": false
+            },
+            {
+              "id": "93cb140f-fb49-4e03-b12e-82b95dd6ee21",
+              "description": "Failed login attempts logged for further security review.",
+              "completed": false,
+              "isBlocking": false
+            },
+            {
+              "id": "1eb5e0cf-f96e-4c01-94cc-d4cf8011f92a",
+              "description": "Only verified reviewer accounts can access restricted evaluation modules.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "698158d5-78a5-439f-9195-7671b303c402",
+      "title": "Civil Body Admin Portal (Tender Creation)",
+      "description": "Interface for civil body admins to publish tenders, manage specifications, and set eligibility and document requirements.",
+      "priority": "critical",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "ada8aa78-b7ad-4582-a2b8-eb5e6a93c4c6",
+          "title": "Create & Publish Tender",
+          "description": "Civil body admin defines tender details, deadlines, necessary documents, and publishes them to the platform.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "tender",
+            "publishing",
+            "admin"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "dc8485e3-d586-4431-b14c-03bc9218ab74",
+              "description": "Tender must include title, description, eligibility, and deadline fields before publication.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "837a9eb6-7e44-4524-a373-52fa09f131ab",
+              "description": "Publish date cannot be later than closing date.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "f2dd7a61-77e6-47f4-99f4-a49fe4b0f71e",
+              "description": "Each tender record automatically receives a unique tender_id.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "c0260376-db4f-460b-ba81-bda6095094e9",
+              "description": "Published tender appears in discovery module within 5 minutes.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        },
+        {
+          "id": "b90aa09a-ba59-4007-b9ac-214a9f65eb23",
+          "title": "Tender Management Dashboard",
+          "description": "Civil body admins can view and filter all tender statuses and archive past tenders.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "management",
+            "dashboard"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "919e1b25-e8a1-4616-a091-b71e1fa783d7",
+              "description": "Dashboard loads under 3 seconds for 100 tenders.",
+              "completed": false,
+              "isBlocking": false
+            },
+            {
+              "id": "251e17be-6fd0-475a-b19b-3ced7a8c60dc",
+              "description": "Filters by tender status (active, closed, archived) must function correctly.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "0db33429-b858-47e5-81b9-03b2d8b8f8ec",
+              "description": "Admin can archive expired tenders and restore if required.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "6ec3d064-c999-4d0b-a172-3efa5cfccfdb",
+      "title": "Tender Discovery & Browsing",
+      "description": "Public and logged-in users browse and search active tenders efficiently.",
+      "priority": "high",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "9f67a5de-c180-42bb-9850-6fbca8b243ff",
+          "title": "Tender Search & Filter",
+          "description": "Users can search tenders by keyword, category, or deadline and receive relevant results.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "search",
+            "filter",
+            "ui"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "df1531d7-cedf-44cf-9c3b-4a584ec2e3f2",
+              "description": "Keyword search must return matching tenders with >90% accuracy.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "7b56c54a-bb40-4ae5-ae7d-8810634a0abb",
+              "description": "Response time < 2 seconds for 1,000 tenders in dataset.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "2f3a4023-b6cd-4619-96b4-77fa546fa9ea",
+              "description": "Filters by deadline and status produce correct tender subsets.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        },
+        {
+          "id": "ad3fbfbc-0177-4917-be1a-be2e7619c011",
+          "title": "Tender Detail Page",
+          "description": "Displays full tender information with eligibility criteria and application link for eligible bidders.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "detail-page",
+            "user-interface"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "9e6c9cd4-eae1-4918-a4e1-65a512361465",
+              "description": "Tender detail page must link to immutable publication log.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "fecf116e-10ad-49f3-8221-3b104111c665",
+              "description": "‘Apply’ button visible only for verified and eligible users.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "0dd2da9b-5966-4983-a4ac-6ff59507f6f4",
+      "title": "Bid Submission & Handling",
+      "description": "Enable citizens to submit bids with required document uploads and price quotation defined by tender specifications.",
+      "priority": "critical",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "d58721be-20e5-4902-b4b8-3f0d42845c47",
+          "title": "Bid Submission Form",
+          "description": "Bidder uploads required documents and enters quoted price.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "bids",
+            "submission"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "ac2e722a-2bde-425d-8f69-d94da1b54fd2",
+              "description": "Upload supports .pdf, .doc, .zip formats under 10MB each.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "7bf9ed58-203a-4ac3-88a5-f48c014f7e0c",
+              "description": "Mandatory document fields validated before submission.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "5b88ee55-3942-4186-8ff7-7cc5e9b0ff8c",
+              "description": "Each bid saved with timestamp, user_id, and tender_id associations.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "f926dac9-4e9b-4800-88b4-5513cc63fb7b",
+              "description": "Confirmation notification sent immediately after bid submission.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        },
+        {
+          "id": "36ca0928-0962-4168-b791-571ebe0278c5",
+          "title": "Bid Viewing by Civil Body",
+          "description": "Civil body admins can view submitted bids and filter them by criteria.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "bid-management"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "2916227d-ee61-447d-97ba-015367d99569",
+              "description": "Bid listing page displays bidder name, quoted price, timestamp and status.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "d017b0ff-51c3-46ef-8626-795624514131",
+              "description": "List sortable by price and submission date.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "5a9c97fb-4ef5-4f43-8c76-5bdb37cb088e",
+              "description": "Load time < 2 seconds for 100 bids.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "53e07d2a-5f58-43f1-8d85-027866feff75",
+      "title": "Tender Evaluation & Review",
+      "description": "Provide reviewers and civil body admins with tools to evaluate and score submitted bids and declare winners.",
+      "priority": "high",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "bbcbb799-89f1-4b13-87f5-8f6a3719e8cd",
+          "title": "Bid Scoring & Review Interface",
+          "description": "Reviewers score bids manually using a standardized scoring scale.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "evaluation",
+            "scoring",
+            "review"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "b065fc0c-5bf9-46e0-a33c-ef02a3e8d18b",
+              "description": "Scoring values constrained between 0 and 100.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "a8a0b23a-9bc0-46a0-8378-63ea3430ca1d",
+              "description": "Reviewer identity stored in score metadata for each evaluation.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "69bca1b2-7748-476a-bef2-a44c522abf7e",
+              "description": "Average score auto-calculated per tender.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        },
+        {
+          "id": "58b92676-c3de-4637-a67b-3a45ba6ffeb9",
+          "title": "Awarding & Status Update",
+          "description": "Civil body admin selects winning bid and updates tender status to awarded.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "award",
+            "status"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "c1dadc11-6420-4636-9e25-911127dd309c",
+              "description": "Winner receives notification instantly upon award.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "1aaecdb0-1201-42b1-b179-d33efcc2ef16",
+              "description": "All other bids locked and marked as closed after award.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "a9d11862-35c8-40c2-b96a-6bed12972189",
+              "description": "Award timestamp recorded and immutable in audit logs.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "750e90e4-d857-41bc-b88f-901276264684",
+      "title": "Audit & Compliance Reporting",
+      "description": "Maintain transparency through immutable event logs and public compliance reports.",
+      "priority": "high",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "104035e5-b5f7-4d1b-9876-07938d22055e",
+          "title": "Immutable Event Logs",
+          "description": "Store all tender and bid events immutably for compliance.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "audit-log",
+            "compliance"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "2bcf2b11-465f-40dd-887a-fb59175b7ae1",
+              "description": "Every event includes timestamp, actor, and action details.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "8494e7b6-fc2d-4f91-aa53-f64f57408406",
+              "description": "Logs are uneditable after creation and retrievable with filtering.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "3a7fbce9-28bb-4cbb-89da-21954f076329",
+              "description": "Logs exportable in CSV and JSON formats.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        },
+        {
+          "id": "552a04b8-5401-4b33-b540-e017d1192dd4",
+          "title": "Public Transparency Report",
+          "description": "Expose awarded tenders and summary of bids for public view.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "reporting",
+            "public-view"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "35ebe919-6c3f-401f-af7b-242259436ca1",
+              "description": "Only completed tenders appear in the transparency report.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "3a02b058-0f44-4b94-aa31-8c4e402b8c58",
+              "description": "Page load time <3 seconds for up to 500 records.",
+              "completed": false,
+              "isBlocking": false
+            },
+            {
+              "id": "bc1fc1bb-f832-40ad-a32b-6bb7e860af0c",
+              "description": "Report must include publish and award timestamps.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fe2c7c0f-baa1-44e8-9b63-be33b8b66513",
+      "title": "Platform Administration (Super Admin Panel)",
+      "description": "Super admin monitors system metrics, manages civil body accounts, and handles permissions globally.",
+      "priority": "critical",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "9539194a-4f5c-4e4c-884c-c8277c2a9787",
+          "title": "System Metrics Dashboard",
+          "description": "Show real-time stats for tenders, bids, and active users.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "dashboard",
+            "monitoring"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "5a3dca88-a63c-4258-a643-acbdb7756394",
+              "description": "Dashboard metrics auto-refresh every minute.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "9f6f874e-7a9b-4408-9d97-e87652997f4f",
+              "description": "Displays key KPIs: total tenders, bids, users, and system uptime.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "c5b28fad-3da9-49fd-964a-6c61685fe9ba",
+              "description": "Error rate must remain below 1%.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        },
+        {
+          "id": "aa24949f-4fc1-483c-9b04-45ce28909978",
+          "title": "Civil Body Management",
+          "description": "Super admin approves, suspends, or reinstates civil body accounts.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "high",
+          "tags": [
+            "admin-control",
+            "user-management"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "3007529c-ea1e-4a8c-bcdf-6b9142931046",
+              "description": "Status change logged with reason and actor name.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "b842c225-4fef-45ea-838f-a0ecbfee8d88",
+              "description": "Suspended accounts lose access immediately.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "6f0e60b8-9e93-472b-bf77-2d18d4eb1f1e",
+              "description": "Audit entry generated automatically for every change.",
+              "completed": false,
+              "isBlocking": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "f9bef72e-8b75-4c00-bdb7-eb709fd51f09",
+      "title": "Notifications & Communication",
+      "description": "Provide automated notifications and messaging among users and admins.",
+      "priority": "medium",
+      "status": "pending",
+      "completedStories": 0,
+      "createdAt": "2025-11-16T11:54:25.498Z",
+      "updatedAt": "2025-11-16T11:54:25.498Z",
+      "stories": [
+        {
+          "id": "e327b95b-6047-49d9-a74a-926ecd3fedf2",
+          "title": "Bid & Tender Notifications",
+          "description": "Automated alerts for bid submission, award, and tender expiry.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "medium",
+          "tags": [
+            "notification",
+            "alerts"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "f7fc251b-3396-46dc-9d96-231c9d03ab79",
+              "description": "Email notifications sent within one minute of triggering event.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "114e5f71-858f-4d48-9976-98afb39b4207",
+              "description": "Notification logs stored under user record for future audit.",
+              "completed": false,
+              "isBlocking": false
+            },
+            {
+              "id": "8e766e03-ab4e-45a8-827e-9becef4592b2",
+              "description": "SMS gateway placeholder prepared for future integration.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        },
+        {
+          "id": "0a87bffc-ea5d-44c6-980f-c4e7f33f8409",
+          "title": "Admin Broadcast Messages",
+          "description": "Super admin can broadcast platform updates to all registered users.",
+          "status": "draft",
+          "assignedPersonas": [],
+          "priority": "low",
+          "tags": [
+            "communication",
+            "messaging"
+          ],
+          "comments": [],
+          "createdAt": "2025-11-16T11:54:25.498Z",
+          "updatedAt": "2025-11-16T11:54:25.498Z",
+          "acceptanceCriteria": [
+            {
+              "id": "7c8a1925-39bc-4512-ac8e-392dfedc29fb",
+              "description": "Message visible in dashboard notification panel for all users.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "7a7a1055-a7a5-4b0c-9858-eb2280447c75",
+              "description": "Delivery success rate must exceed 99%.",
+              "completed": false,
+              "isBlocking": true
+            },
+            {
+              "id": "23d44022-1fca-42d1-a1bd-1cb1e5e286bf",
+              "description": "Messages archived automatically after 30 days.",
+              "completed": false,
+              "isBlocking": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
