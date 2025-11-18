@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import type { ApiConfig } from '../types';
 import { buildAuthHeaders } from '../utils';
+import { AIPilot } from '../components/AIPilot';
 
 type AcceptanceCriteria = {
   id: string;
@@ -23,7 +24,15 @@ type Story = {
   acceptanceCriteria: AcceptanceCriteria[];
   priority: string;
   tags: string[];
-  comments: Array<{ id: string; content: string; author: string; createdAt: string }>;
+  comments: Array<{
+    id: string;
+    content: string;
+    author: string;
+    authorType: string;
+    type: string;
+    createdAt: string;
+    updatedAt?: string;
+  }>;
 };
 
 type Epic = {
@@ -48,6 +57,7 @@ type Project = {
   epics: Epic[];
   tags: string[];
   createdAt: string;
+  updatedAt?: string;
   createdBy: string;
 };
 
@@ -63,6 +73,7 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
+  const [showAIPilot, setShowAIPilot] = useState(false);
 
   const canCallApi = useMemo(
     () => config.baseUrl.trim().length > 0 && config.token.trim().length > 0,
@@ -159,6 +170,16 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
     }
   };
 
+  const handleAIPilotSpecUpdate = useCallback((updatedSpec: Record<string, unknown>) => {
+    setProject(updatedSpec as Project);
+    // Optionally save the updated project automatically
+    // Or show a notification that the user needs to save
+  }, []);
+
+  const handleAIPilotSpecApply = useCallback((appliedSpec: Record<string, unknown>) => {
+    setProject(appliedSpec as Project);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex justify-center p-8">
@@ -188,20 +209,69 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
   }
 
   const totalStories = project.epics.reduce((sum, epic) => sum + epic.stories.length, 0);
-  const completedStories = project.epics.reduce((sum, epic) => sum + epic.completedStories, 0);
+  // Calculate completed stories by checking story status (more accurate than epic.completedStories)
+  const completedStories = project.epics.reduce(
+    (sum, epic) => sum + epic.stories.filter(s => s.status === 'done' || s.status === 'completed').length,
+    0
+  );
   const progressPercentage = totalStories > 0 ? Math.round((completedStories / totalStories) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <button
-            onClick={() => navigate('/projects')}
-            className="mb-2 flex items-center gap-2 text-sm text-slate-400 hover:text-white"
+      {/* AI Pilot Toggle (Fixed Position) */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setShowAIPilot(!showAIPilot)}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            showAIPilot
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
           >
-            <span>←</span> Back to Projects
-          </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+          {showAIPilot ? 'Hide' : 'Show'} AI Pilot
+        </button>
+      </div>
+
+      <div className={`grid gap-6 ${showAIPilot ? 'lg:grid-cols-[1fr,400px]' : 'lg:grid-cols-1'}`}>
+        {/* Main Project Content */}
+        <div className="flex flex-col gap-6">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="mb-2 flex items-center gap-3">
+            <button
+              onClick={() => navigate('/projects')}
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-white"
+            >
+              <span>←</span> Back to Projects
+            </button>
+            <button
+              onClick={loadProject}
+              className="flex items-center gap-1.5 rounded border border-slate-700 bg-slate-800/50 px-2.5 py-1 text-xs text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+              title="Refresh project data"
+            >
+              <span>🔄</span> Refresh
+            </button>
+            {project.updatedAt && (
+              <span className="text-xs text-slate-500">
+                Updated: {new Date(project.updatedAt).toLocaleString()}
+              </span>
+            )}
+          </div>
           <h2 className="text-3xl font-bold text-white">{project.name}</h2>
           <p className="mt-2 text-slate-300">{project.description}</p>
         </div>
@@ -258,7 +328,7 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
       {/* Epics */}
       <div className="flex flex-col gap-4">
         <h3 className="text-xl font-bold text-white">Epics</h3>
-        {project.epics.map((epic, epicIndex) => {
+            {project.epics.map((epic, epicIndex) => {
           const isExpanded = expandedEpics.has(epic.id);
           const epicProgress = epic.stories.length > 0
             ? Math.round((epic.completedStories / epic.stories.length) * 100)
@@ -387,6 +457,64 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
                                 </div>
                               </div>
 
+                              {/* Comments */}
+                              {story.comments && story.comments.length > 0 && (
+                                <div className="mb-3">
+                                  <h6 className="mb-2 text-xs font-semibold uppercase text-slate-400">
+                                    Activity & Comments ({story.comments.length})
+                                  </h6>
+                                  <div className="flex max-h-96 flex-col gap-2 overflow-y-auto rounded border border-slate-700 bg-slate-900/30 p-2">
+                                    {story.comments
+                                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                      .map(comment => {
+                                        const commentTypeColors: Record<string, string> = {
+                                          update: 'bg-blue-900/30 border-blue-800',
+                                          decision: 'bg-purple-900/30 border-purple-800',
+                                          blocker: 'bg-red-900/30 border-red-800',
+                                          question: 'bg-yellow-900/30 border-yellow-800',
+                                          note: 'bg-slate-800/50 border-slate-700'
+                                        };
+                                        const typeColor = commentTypeColors[comment.type] || commentTypeColors.note;
+                                        const authorTypeColors: Record<string, string> = {
+                                          persona: 'text-blue-400',
+                                          agent: 'text-green-400',
+                                          user: 'text-slate-300'
+                                        };
+                                        const authorTypeColor = authorTypeColors[comment.authorType] || 'text-slate-400';
+
+                                        return (
+                                          <div
+                                            key={comment.id}
+                                            className={`rounded border p-2.5 text-sm ${typeColor}`}
+                                          >
+                                            <div className="mb-1 flex items-center justify-between gap-2">
+                                              <div className="flex items-center gap-2">
+                                                <span className={`text-xs font-medium ${authorTypeColor}`}>
+                                                  {comment.author}
+                                                </span>
+                                                <span className="text-xs text-slate-500">
+                                                  ({comment.authorType})
+                                                </span>
+                                                {comment.type !== 'update' && (
+                                                  <span className="rounded bg-slate-800/50 px-1.5 py-0.5 text-xs text-slate-400">
+                                                    {comment.type}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <span className="text-xs text-slate-500">
+                                                {new Date(comment.createdAt).toLocaleString()}
+                                              </span>
+                                            </div>
+                                            <div className="whitespace-pre-wrap text-slate-200">
+                                              {comment.content}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Tags */}
                               {story.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
@@ -406,8 +534,25 @@ export function ProjectDetailPage({ config }: ProjectDetailPageProps) {
                 </div>
               )}
             </div>
-          );
-        })}
+            );
+          })}
+          </div>
+        </div>
+
+        {/* AI Pilot Panel */}
+        {showAIPilot && (
+          <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+            <AIPilot
+              config={config}
+              entityType="project"
+              currentSpec={project || undefined}
+              onSpecUpdate={handleAIPilotSpecUpdate}
+              onSpecApply={handleAIPilotSpecApply}
+              title="Project AI Pilot"
+              description="Ask me to update epics, stories, or acceptance criteria"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

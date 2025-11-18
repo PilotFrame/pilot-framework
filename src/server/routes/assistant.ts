@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import type { AuthenticatedRequest } from '../auth.js';
-import { chatWithAssistant, type ChatRequest, type ChatMessage } from '../services/assistantService.js';
+import { chatWithAssistant, chatWithContextualAssistant, summarizeConversation, type ChatRequest, type ChatMessage, type ContextualChatRequest } from '../services/assistantService.js';
 import {
   createConversation,
   getConversation,
@@ -19,6 +19,96 @@ export const assistantRouter = Router();
 // Test route to verify routing works
 assistantRouter.get('/test', (_req, res) => {
   res.json({ message: 'Assistant router is working' });
+});
+
+// Context-aware chat (for Persona/Workflow/Project editing)
+assistantRouter.post('/chat-contextual', async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const body = req.body;
+    
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      res.status(400).json({ 
+        error: 'Invalid request body. Expected JSON object.',
+      });
+      return;
+    }
+    
+    // Extract required fields
+    const message = body.message;
+    const operation = body.operation; // 'create' | 'update' | 'refine' | 'general'
+    const entityType = body.entityType; // 'persona' | 'workflow' | 'project' | 'general'
+    const currentSpec = body.currentSpec; // Optional: existing spec to update
+    const focusArea = body.focusArea; // Optional: specific area to focus on
+    const conversationId = body.conversationId && typeof body.conversationId === 'string' 
+      ? body.conversationId.trim() 
+      : undefined;
+    
+    // Validate required fields
+    if (!message || typeof message !== 'string') {
+      res.status(400).json({ error: 'Message is required and must be a string' });
+      return;
+    }
+    
+    if (!operation || !['create', 'update', 'refine', 'general'].includes(operation)) {
+      res.status(400).json({ error: 'Operation must be one of: create, update, refine, general' });
+      return;
+    }
+    
+    if (!entityType || !['persona', 'workflow', 'project', 'general'].includes(entityType)) {
+      res.status(400).json({ error: 'EntityType must be one of: persona, workflow, project, general' });
+      return;
+    }
+    
+    // Get or create conversation
+    let conversation;
+    if (conversationId && conversationId.length > 0) {
+      conversation = getConversation(conversationId);
+      if (!conversation) {
+        res.status(404).json({ error: 'Conversation not found' });
+        return;
+      }
+    } else {
+      conversation = createConversation();
+    }
+    
+    // Add user message to conversation
+    addMessageToConversation(conversation.id, 'user', message.trim());
+    
+    // Get conversation history
+    const conversationHistory: ChatMessage[] = getConversationMessages(conversation.id)
+      .filter(msg => msg.role !== 'system')
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        excludeFromHistory: msg.excludeFromHistory || false
+      }));
+    
+    // Call contextual assistant service
+    const request: ContextualChatRequest = {
+      message: message.trim(),
+      operation,
+      entityType,
+      currentSpec,
+      focusArea,
+      conversationId: conversation.id
+    };
+    
+    const response = await chatWithContextualAssistant(request, conversationHistory);
+    
+    // Add assistant response to conversation
+    addMessageToConversation(conversation.id, 'assistant', response.message);
+    
+    // Return response with conversationId
+    res.json({ 
+      data: {
+        ...response,
+        conversationId: conversation.id
+      }
+    });
+  } catch (error) {
+    console.error('Error in contextual assistant chat route:', error);
+    next(error);
+  }
 });
 
 // Send a message in a conversation (creates conversation if conversationId not provided)
@@ -232,6 +322,81 @@ assistantRouter.post('/conversations/:conversationId/messages/:messageIndex/togg
   } catch (error) {
     console.error('Error toggling message exclusion:', error);
     res.status(500).json({ error: 'Failed to toggle message exclusion' });
+  }
+});
+
+// Summarize conversation and mark old messages as excluded
+assistantRouter.post('/conversations/:conversationId/summarize', async (req: AuthenticatedRequest, res) => {
+  try {
+    const { conversationId } = req.params;
+    const conversation = getConversation(conversationId);
+    
+    if (!conversation) {
+      res.status(404).json({ error: 'Conversation not found' });
+      return;
+    }
+    
+    // Get conversation history (excluding already excluded messages)
+    const conversationHistory: ChatMessage[] = getConversationMessages(conversationId)
+      .filter(msg => !msg.excludeFromHistory)
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        excludeFromHistory: false
+      }));
+    
+    if (conversationHistory.length === 0) {
+      res.status(400).json({ error: 'No conversation history to summarize' });
+      return;
+    }
+    
+    // Generate summary
+    const summary = await summarizeConversation(conversationHistory);
+    
+    // Count messages that will be excluded (all non-excluded messages before summary)
+    const messagesToExclude = conversation.messages.filter(msg => !msg.excludeFromHistory).length;
+    
+    // Add summary as an assistant message (so it's visible in UI and can be included in future summaries)
+    // Format it clearly as a summary
+    const summaryMessage = `📋 **Conversation Summary**\n\n${summary}\n\n---\n*This summary preserves the context of ${messagesToExclude} previous messages that have been excluded from history.*`;
+    addMessageToConversation(conversationId, 'assistant', summaryMessage);
+    
+    // Reload conversation to get the updated state with the summary
+    const updatedConversation = getConversation(conversationId);
+    if (!updatedConversation) {
+      res.status(500).json({ error: 'Failed to reload conversation after adding summary' });
+      return;
+    }
+    
+    // Mark all old messages (before the summary) as excluded from history
+    // The summary is now the last message, so exclude all messages before it
+    // IMPORTANT: Don't exclude the summary itself (it's at summaryIndex)
+    const summaryIndex = updatedConversation.messages.length - 1;
+    for (let i = 0; i < summaryIndex; i++) {
+      // Only exclude messages that aren't already excluded and aren't summaries
+      const msg = updatedConversation.messages[i];
+      if (!msg.excludeFromHistory && !msg.content?.includes('📋 **Conversation Summary**')) {
+        toggleMessageExclusion(conversationId, i);
+      }
+    }
+    
+    // Reload one more time to get final state
+    const finalConversation = getConversation(conversationId);
+    
+    res.json({
+      data: {
+        conversationId: finalConversation?.id || conversationId,
+        summary,
+        messagesExcluded: messagesToExclude,
+        totalMessages: finalConversation?.messages.length || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error summarizing conversation:', error);
+    res.status(500).json({ 
+      error: 'Failed to summarize conversation',
+      message: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 

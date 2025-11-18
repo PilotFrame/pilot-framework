@@ -9,7 +9,6 @@ import { healthRouter } from './routes/health.js';
 import { invokeRouter } from './routes/invoke.js';
 import { mcpRouter } from './routes/mcp.js';
 import { personasRouter } from './routes/personas.js';
-import { pmMcpRouter } from './routes/pm-mcp.js';
 import { projectsRouter } from './routes/projects.js';
 import { workflowsRouter } from './routes/workflows.js';
 
@@ -47,7 +46,6 @@ export function createApp() {
   app.use('/health', healthRouter);
 
   app.use('/mcp', mcpRouter);
-  app.use('/pm/mcp', pmMcpRouter);
 
   // Auth middleware for /api routes
   app.use('/api', requireAuth);

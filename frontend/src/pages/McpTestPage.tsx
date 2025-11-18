@@ -8,7 +8,7 @@ type McpTestPageProps = {
   connectionStatus: 'idle' | 'connected' | 'disconnected';
 };
 
-type McpEndpoint = 'personas' | 'projects';
+type McpEndpoint = 'unified';
 
 interface McpTool {
   name: string;
@@ -60,7 +60,7 @@ const TOOL_EXAMPLES: Record<string, string> = {
 };
 
 export function McpTestPage({ config, connectionStatus }: McpTestPageProps) {
-  const [activeEndpoint, setActiveEndpoint] = useState<McpEndpoint>('personas');
+  const [activeEndpoint] = useState<McpEndpoint>('unified');
   const [tools, setTools] = useState<McpTool[]>([]);
   const [resources, setResources] = useState<McpResource[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,8 +77,8 @@ export function McpTestPage({ config, connectionStatus }: McpTestPageProps) {
 
   const canCallApi = config.baseUrl.trim().length > 0 && config.token.trim().length > 0;
 
-  const getEndpointPath = (endpoint: McpEndpoint) => {
-    return endpoint === 'personas' ? '/mcp' : '/pm/mcp';
+  const getEndpointPath = (_endpoint: McpEndpoint) => {
+    return '/mcp'; // All tools now available at unified endpoint
   };
 
   const loadMcpData = async () => {
@@ -301,49 +301,18 @@ export function McpTestPage({ config, connectionStatus }: McpTestPageProps) {
       </div>
 
       {/* Endpoint Selector */}
-      <div className="flex gap-2 rounded-lg border border-slate-800 bg-slate-900/50 p-1">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveEndpoint('personas');
-            setSelectedTool(null);
-            setToolResult(null);
-            setSelectedResource(null);
-            setResourceContent(null);
-          }}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
-            activeEndpoint === 'personas'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <span>👤</span>
-            <span>Personas & Workflows MCP</span>
-            <code className="text-xs opacity-60">/mcp</code>
+      <div className="rounded-lg border border-blue-900/40 bg-blue-900/20 p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-900/40 text-lg">
+            🔧
           </div>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveEndpoint('projects');
-            setSelectedTool(null);
-            setToolResult(null);
-            setSelectedResource(null);
-            setResourceContent(null);
-          }}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
-            activeEndpoint === 'projects'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <span>📋</span>
-            <span>Project Management MCP</span>
-            <code className="text-xs opacity-60">/pm/mcp</code>
+          <div>
+            <h3 className="font-semibold text-blue-100">Unified MCP Endpoint</h3>
+            <p className="text-sm text-blue-300">
+              All tools (personas, workflows, & project management) available at <code className="rounded bg-blue-900/30 px-1.5 py-0.5 font-mono text-xs">/mcp</code>
+            </p>
           </div>
-        </button>
+        </div>
       </div>
 
       {!canCallApi ? (
@@ -417,7 +386,6 @@ export function McpTestPage({ config, connectionStatus }: McpTestPageProps) {
                       </div>
                       <button
                         onClick={() => {
-                          setActiveEndpoint(item.endpoint);
                           setSelectedTool(item.tool);
                           setToolInput(item.input);
                         }}

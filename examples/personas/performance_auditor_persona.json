@@ -20,7 +20,8 @@
       "frontend build preview URL from astro_react_frontend_developer",
       "API schema and endpoints from backend_engineer_persona",
       "performance_targets from architect_persona.performance_targets",
-      "release_metadata from project_coordinator_persona"
+      "release_metadata from project_coordinator_persona",
+      "Assigned stories with acceptance criteria (when working within a sprint managed by project_coordinator_persona)"
     ],
     "workflow": [
       "Step 1: Collect telemetry and deployment summaries from DevOps Engineer Persona.",

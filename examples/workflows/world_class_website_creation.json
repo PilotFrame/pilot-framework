@@ -1,0 +1,93 @@
+{
+  "id": "world_class_website_creation",
+  "name": "World Class Website Creation Workflow",
+  "steps": [
+    {
+      "id": "step_1_capture_brief",
+      "persona_id": "customer_engagement_persona",
+      "order": 1,
+      "label": "Capture Customer Requirements and Project Brief"
+    },
+    {
+      "id": "step_2_define_architecture",
+      "persona_id": "architect_persona",
+      "order": 2,
+      "label": "Analyze Project Brief & Define Architecture and CSS Strategy"
+    },
+    {
+      "id": "step_3_create_design_system",
+      "persona_id": "creative_designer_persona",
+      "order": 3,
+      "label": "Design System, Tokens, and Visual Blueprint"
+    },
+    {
+      "id": "step_4_implement_frontend",
+      "persona_id": "astro_react_frontend_developer",
+      "order": 4,
+      "label": "Implement Astro + React Frontend per Architecture and Design System"
+    },
+    {
+      "id": "step_5_curate_content_manifest",
+      "persona_id": "content_editor_persona",
+      "order": 5,
+      "label": "Create and Maintain Centralized Content Manifest"
+    },
+    {
+      "id": "step_6_accessibility_qa",
+      "persona_id": "accessibility_qa_reviewer",
+      "order": 6,
+      "label": "Perform Accessibility & QA Audit"
+    },
+    {
+      "id": "step_7_seo_performance_audit",
+      "persona_id": "seo_performance_auditor_persona",
+      "order": 7,
+      "label": "Conduct SEO & Performance Audit"
+    }
+  ],
+  "execution_spec": {
+    "description": "Sequential workflow building world-class websites using Astro + React design and architecture personas. Begins with client brief, spans architecture, design, content, implementation, and audits. Includes conditional refinement loops from accessibility and SEO audit stages back to the frontend developer and architect personas until all gates pass.",
+    "flow_pattern": "mixed",
+    "cycle_details": {
+      "cycle_steps": [
+        "step_4_implement_frontend",
+        "step_6_accessibility_qa",
+        "step_7_seo_performance_audit"
+      ],
+      "exit_condition": "accessibility_score >= 0.9 AND performance_score >= architect_persona.gates.performance_score_target AND seo_completeness_ratio >= 0.95",
+      "max_iterations": 5
+    },
+    "conditional_branches": [
+      {
+        "condition": "completeness_score < 0.9",
+        "target_step": "step_1_capture_brief",
+        "description": "If the project brief from customer_engagement_persona is incomplete, refine and re-gather information."
+      },
+      {
+        "condition": "css_strategy.bundle_size_kb > 90",
+        "target_step": "step_2_define_architecture",
+        "description": "If CSS bundle exceeds threshold, architect_persona revisits CSS framework analysis."
+      },
+      {
+        "condition": "accessibility_score < 0.9",
+        "target_step": "step_4_implement_frontend",
+        "description": "Frontend developer refines codebase based on accessibility reviewer feedback."
+      },
+      {
+        "condition": "performance_score < architect_persona.gates.performance_score_target OR seo_completeness_ratio < 0.95",
+        "target_step": "step_4_implement_frontend",
+        "description": "Frontend developer adjusts optimizations and metadata for SEO & performance improvement."
+      }
+    ],
+    "execution_guidance": "Execute steps sequentially; after audit steps 6 and 7, evaluate quality metrics. If below targets, trigger defined cycles to developer and architect personas. End workflow when all completion criteria are met with high confidence."
+  },
+  "metadata": {
+    "created_by": "workflow.bot@pilotframe.dev",
+    "created_at": "2025-11-20T15:05:00Z",
+    "template_version": "1.3",
+    "workflow_version": "1.3",
+    "region": "global",
+    "project_complexity_index": "high",
+    "updated_at": "2025-11-20T15:05:00Z"
+  }
+}

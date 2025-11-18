@@ -66,6 +66,7 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
   const [selectedPersonas, setSelectedPersonas] = useState<Set<string>>(new Set());
   const [selectedWorkflows, setSelectedWorkflows] = useState<Set<string>>(new Set());
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -219,24 +220,29 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
       const conversation = body.data;
       
       // Convert conversation messages to ChatMessage format and extract specs from assistant messages
-      const loadedMessages: ChatMessage[] = conversation.messages.map((msg: any) => {
-        const chatMsg: ChatMessage = {
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-          excludeFromHistory: msg.excludeFromHistory || false
-        };
-        
-        // Extract spec from assistant messages (same as when new messages arrive)
-        if (msg.role === 'assistant') {
-          const extractedSpec = extractSpecFromMessage(msg.content);
-          if (extractedSpec) {
-            chatMsg.extractedSpec = extractedSpec;
+      const loadedMessages: ChatMessage[] = conversation.messages
+        .filter((msg: any) => {
+          // Include all user and assistant messages (system messages are filtered out for display)
+          return msg.role === 'user' || msg.role === 'assistant';
+        })
+        .map((msg: any) => {
+          const chatMsg: ChatMessage = {
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            excludeFromHistory: msg.excludeFromHistory || false
+          };
+          
+          // Extract spec from assistant messages (same as when new messages arrive)
+          if (msg.role === 'assistant') {
+            const extractedSpec = extractSpecFromMessage(msg.content);
+            if (extractedSpec) {
+              chatMsg.extractedSpec = extractedSpec;
+            }
           }
-        }
-        
-        return chatMsg;
-      });
+          
+          return chatMsg;
+        });
       
       setMessages(loadedMessages);
       setConversationId(conversation.conversationId);
@@ -659,6 +665,56 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
     setShowConversations(false);
   }, []);
 
+  const handleSummarizeConversation = useCallback(async () => {
+    if (!conversationId || !canCallApi || isSummarizing) {
+      return;
+    }
+
+    // Check if there are messages to summarize (excluding already excluded ones)
+    const messagesToSummarize = messages.filter(msg => !msg.excludeFromHistory);
+    if (messagesToSummarize.length === 0) {
+      setErrorMessage('No conversation history to summarize');
+      return;
+    }
+
+    try {
+      setIsSummarizing(true);
+      setErrorMessage(null);
+
+      const response = await fetch(
+        new URL(`/api/assistant/conversations/${conversationId}/summarize`, config.baseUrl).toString(),
+        {
+          method: 'POST',
+          headers: buildAuthHeaders(config)
+        }
+      );
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error || errorBody.message || `${response.status} ${response.statusText}`);
+      }
+
+      const body = await response.json();
+      const { messagesExcluded } = body.data;
+
+      // Reload the conversation to get updated messages with summary
+      // The summary is added as a system message by the backend
+      await loadConversation(conversationId);
+
+      // Show success notification
+      setErrorMessage(null);
+      
+      // Scroll to bottom to show the summary
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    } catch (error) {
+      setErrorMessage(`Failed to summarize conversation: ${(error as Error).message}`);
+    } finally {
+      setIsSummarizing(false);
+    }
+  }, [conversationId, canCallApi, isSummarizing, messages, config, loadConversation]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -677,6 +733,30 @@ export function AssistantPage({ config, connectionStatus }: AssistantPageProps) 
               >
                 {showConversations ? 'Hide' : 'Show'} Conversations ({conversations.length})
               </button>
+              {conversationId && messages.filter(msg => !msg.excludeFromHistory).length > 0 && (
+                <button
+                  onClick={handleSummarizeConversation}
+                  disabled={isSummarizing || isLoading}
+                  className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Summarize conversation and exclude old messages from history"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  {isSummarizing ? 'Summarizing...' : 'Summarize'}
+                </button>
+              )}
               <button
                 onClick={handleNewConversation}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"

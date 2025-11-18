@@ -20,7 +20,8 @@
       "backend_container_image and api_schema from backend_engineer_persona",
       "frontend_container_image from astro_react_frontend_developer",
       "environment configuration and secrets policies from project_coordinator_persona",
-      "performance baselines from performance_auditor_persona (optional)"
+      "performance baselines from performance_auditor_persona (optional)",
+      "Assigned stories with acceptance criteria (when working within a sprint managed by project_coordinator_persona)"
     ],
     "workflow": [
       "Step 1: Validate architecture_blueprint and extract required Azure resources (App Service for Containers, Container Registry, Cosmos DB, Key Vault, Log Analytics, Application Insights).",

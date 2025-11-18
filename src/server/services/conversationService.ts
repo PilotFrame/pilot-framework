@@ -300,10 +300,18 @@ export function listConversations(): Array<{
   return conversationsList;
 }
 
-// Clean up old conversations (older than 24 hours)
+// Clean up old conversations (configurable retention period)
 export function cleanupOldConversations(): void {
+  // Get retention period from environment variable (default: 30 days, 0 = disabled)
+  const retentionDays = parseInt(process.env.CONVERSATION_RETENTION_DAYS || '30', 10);
+  
+  // If retention is 0 or negative, disable cleanup
+  if (retentionDays <= 0) {
+    return;
+  }
+  
   const now = Date.now();
-  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  const maxAge = retentionDays * 24 * 60 * 60 * 1000; // Convert days to milliseconds
   let deletedCount = 0;
   
   // Check both in-memory cache and files
@@ -350,10 +358,17 @@ export function cleanupOldConversations(): void {
   }
   
   if (deletedCount > 0) {
-    console.log(`[ConversationService] Cleaned up ${deletedCount} old conversations`);
+    console.log(`[ConversationService] Cleaned up ${deletedCount} old conversations (older than ${retentionDays} days)`);
   }
 }
 
-// Run cleanup every hour
-setInterval(cleanupOldConversations, 60 * 60 * 1000);
+// Run cleanup every hour (only if retention is enabled)
+const retentionDays = parseInt(process.env.CONVERSATION_RETENTION_DAYS || '30', 10);
+if (retentionDays > 0) {
+  const cleanupInterval = parseInt(process.env.CONVERSATION_CLEANUP_INTERVAL_HOURS || '24', 10) * 60 * 60 * 1000;
+  setInterval(cleanupOldConversations, cleanupInterval);
+  console.log(`[ConversationService] Auto-cleanup enabled: conversations older than ${retentionDays} days will be deleted (checking every ${cleanupInterval / (60 * 60 * 1000)} hours)`);
+} else {
+  console.log('[ConversationService] Auto-cleanup disabled (CONVERSATION_RETENTION_DAYS=0 or not set)');
+}
 

@@ -1,7 +1,17 @@
 {
   "id": "world_class_webapp_development_workflow",
-  "name": "World-Class Web Application Development Workflow (v2.0)",
+  "name": "World-Class Web Application Development Workflow — Sprint-Based (v3.0)",
   "steps": [
+    {
+      "id": "step_0_sprint_planning",
+      "persona_id": "project_coordinator_persona",
+      "order": 0,
+      "label": "Sprint Planning — Load Project & Assign Stories",
+      "metadata": {
+        "phase": "sprint_start",
+        "requires_mcp_tools": ["project_get", "story_list_by_status", "story_update_status"]
+      }
+    },
     {
       "id": "step_1_architecture_design",
       "persona_id": "architect_persona",
@@ -63,15 +73,30 @@
       "label": "Content Synchronization and Manifest Validation"
     },
     {
-      "id": "step_9_release_coordination",
+      "id": "step_9_sprint_review",
       "persona_id": "project_coordinator_persona",
       "order": 9,
-      "label": "Release Preparation and Coordination"
+      "label": "Sprint Review — Mark Stories Done & Generate Report",
+      "metadata": {
+        "phase": "sprint_end",
+        "requires_mcp_tools": ["story_mark_criteria_complete", "story_update_status", "story_add_comment"]
+      }
+    },
+    {
+      "id": "step_10_release_coordination",
+      "persona_id": "project_coordinator_persona",
+      "order": 10,
+      "label": "Release Preparation and Coordination",
+      "condition": "sprint_goals_met AND confidence_score >= 0.9",
+      "metadata": {
+        "phase": "release"
+      }
     }
   ],
   "execution_spec": {
-    "description": "Enterprise-ready mixed workflow orchestrating all personas for world-class web application delivery. Defines parallel, sequential, and cyclic flow patterns with deterministic metrics, fallbacks, and explicit post-cycle handoff.",
-    "flow_pattern": "mixed",
+    "description": "Enterprise-ready sprint-based mixed workflow orchestrating all personas for world-class web application delivery. Each sprint iteration includes planning, execution, QA cycles, and review phases. Project Coordinator manages backlog via MCP tools, assigns stories to personas, and tracks completion.",
+    "flow_pattern": "sprint_iterative",
+    "sprint_duration": "2 weeks",
     "parallel_details": {
       "parallel_steps": [
         "step_1_architecture_design",
@@ -136,22 +161,27 @@
       }
     ],
     "post_cycle": {
-      "handoff_step": "step_9_release_coordination",
+      "handoff_step": "step_9_sprint_review",
       "expected_inputs": [
         "accessibility_qa_reviewer.accessibility_qa_report",
         "performance_auditor_persona.performance_audit_report",
-        "devops_engineer_persona.deployment_summary"
+        "devops_engineer_persona.deployment_summary",
+        "content_editor_persona.content_manifest"
       ]
     },
-    "execution_guidance": "Run architecture and design personas in parallel during planning, proceed sequentially through backend, frontend, and DevOps automation. Enter QA-performance cycle until thresholds pass. Aggregate metrics via min confidence rule; then hand off results to content and coordinator personas for release readiness validation and telemetry collection."
+    "execution_guidance": "SPRINT-BASED EXECUTION:\n\n1. SPRINT START (Step 0): Project Coordinator loads project via project_get MCP tool, selects 'ready' stories via story_list_by_status, assigns them to personas, updates statuses to 'in_progress'.\n\n2. PLANNING PHASE: Run architecture and design personas in parallel (Steps 1-2) to establish technical foundation for sprint stories.\n\n3. DEVELOPMENT PHASE: Execute backend, frontend, and DevOps personas sequentially (Steps 3-5), working on assigned stories and meeting acceptance criteria.\n\n4. QA CYCLE: Enter QA-performance refinement cycle (Steps 6-7) until accessibility_score >= 0.9, lighthouse_score >= 90, confidence_score >= 0.9. Max 5 iterations.\n\n5. CONTENT SYNC: Validate and synchronize content manifest (Step 8).\n\n6. SPRINT REVIEW (Step 9): Project Coordinator validates all story acceptance criteria are met via story_mark_criteria_complete, updates stories to 'done' via story_update_status, generates sprint report with metrics and learnings.\n\n7. RELEASE (Step 10, conditional): If sprint goals met and confidence >= 0.9, proceed to production release with telemetry collection and artifact archival.\n\n8. NEXT SPRINT: Return to Step 0 to plan and execute next sprint iteration.\n\nAGGREGATION: Use min confidence rule across QA cycle personas. Project Coordinator tracks story-level progress and aggregates sprint metrics for continuous improvement."
   },
   "metadata": {
     "created_by": "workflow.bot@pilotframe.dev",
     "created_at": "2025-11-15T21:35:00Z",
-    "template_version": "2.0",
-    "workflow_version": "2.0",
+    "template_version": "3.0",
+    "workflow_version": "3.0",
     "region": "global",
     "project_complexity_index": "high",
+    "sprint_based": true,
+    "sprint_duration_weeks": 2,
+    "requires_project_backlog": true,
+    "requires_mcp_integration": true,
     "supports_personas": [
       "architect_persona",
       "creative_designer_persona",
@@ -163,6 +193,6 @@
       "content_editor_persona",
       "project_coordinator_persona"
     ],
-    "updated_at": "2025-11-15T21:35:00Z"
+    "updated_at": "2025-11-16T12:00:00Z"
   }
 }

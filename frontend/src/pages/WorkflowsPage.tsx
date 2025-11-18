@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import { WorkflowEditor } from '../components/WorkflowEditor';
 import { WorkflowList } from '../components/WorkflowList';
+import { AIPilot } from '../components/AIPilot';
 import type { ApiConfig, PersonaSummary, WorkflowSummary } from '../types';
 import { buildAuthHeaders } from '../utils';
 import type { WorkflowDefinition } from '../components/WorkflowEditor';
@@ -19,6 +20,7 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowDefinition | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [showAIPilot, setShowAIPilot] = useState(false);
 
   const canCallApi = config.baseUrl.trim().length > 0 && config.token.trim().length > 0;
 
@@ -131,13 +133,53 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
     }
   };
 
+  const handleAIPilotSpecUpdate = useCallback((updatedSpec: Record<string, unknown>) => {
+    setWorkflow(updatedSpec as WorkflowDefinition);
+    setStatusMessage('Workflow updated by AI Pilot');
+    setTimeout(() => setStatusMessage(null), 3000);
+  }, []);
+
+  const handleAIPilotSpecApply = useCallback((appliedSpec: Record<string, unknown>) => {
+    setWorkflow(appliedSpec as WorkflowDefinition);
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       {statusMessage && (
-        <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-red-400">
+        <div className="rounded-lg border border-blue-800 bg-blue-900/20 p-4 text-blue-400">
           {statusMessage}
         </div>
       )}
+
+      {/* AI Pilot Toggle Button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Workflows</h2>
+        <button
+          onClick={() => setShowAIPilot(!showAIPilot)}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            showAIPilot
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+          {showAIPilot ? 'Hide' : 'Show'} AI Pilot
+        </button>
+      </div>
+
       {!canCallApi ? (
         <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-4">
           <div className="flex h-60 items-center justify-center text-sm text-slate-500">
@@ -151,7 +193,7 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px,1fr]">
+        <div className={`grid gap-6 ${showAIPilot ? 'lg:grid-cols-[280px,1fr,400px]' : 'lg:grid-cols-[280px,1fr]'}`}>
           <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-4">
             <WorkflowList
               workflows={workflows}
@@ -187,6 +229,25 @@ export function WorkflowsPage({ config, connectionStatus }: WorkflowsPageProps) 
               />
             )}
           </div>
+
+          {/* AI Pilot Panel */}
+          {showAIPilot && (
+            <div className="rounded-xl border border-slate-900 bg-slate-950/60 p-4">
+              <AIPilot
+                config={config}
+                entityType="workflow"
+                currentSpec={workflow || undefined}
+                onSpecUpdate={handleAIPilotSpecUpdate}
+                onSpecApply={handleAIPilotSpecApply}
+                title="Workflow AI Pilot"
+                description={
+                  workflow
+                    ? 'Ask me to update specific parts of this workflow'
+                    : 'Describe the workflow you want to create'
+                }
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

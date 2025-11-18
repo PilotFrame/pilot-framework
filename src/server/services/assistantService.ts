@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { listPersonas } from './personaService.js';
 import { listWorkflows } from './workflowService.js';
+import { buildContextualPrompt, type OperationType, type EntityType } from './assistantPrompts.js';
 
 const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || '';
 const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || '';
@@ -118,6 +119,15 @@ export interface ChatRequest {
     type: 'persona' | 'workflow';
     content: Record<string, unknown>;
   }>;
+}
+
+export interface ContextualChatRequest {
+  message: string;
+  operation: OperationType; // 'create' | 'update' | 'refine' | 'general'
+  entityType: EntityType; // 'persona' | 'workflow' | 'project' | 'general'
+  currentSpec?: Record<string, unknown>; // Existing spec to update
+  focusArea?: string; // Specific area to focus on
+  conversationId?: string;
 }
 
 function buildSystemPrompt(
@@ -269,6 +279,234 @@ RESPONSE FORMAT:
 - Present the JSON in a json code block for user review
 
 When you detect the user wants to create a project (keywords: "build", "create project", "website", "app", "application"), switch to project interview mode and guide them through the structured requirements gathering process.`;
+}
+
+/**
+ * Generate a comprehensive summary of a conversation that preserves all context
+ * This summary should be detailed enough to replace the conversation history
+ */
+export async function summarizeConversation(
+  conversationHistory: ChatMessage[]
+): Promise<string> {
+  const client = getClient();
+  
+  // Filter out excluded messages
+  const filteredHistory = conversationHistory.filter(msg => !msg.excludeFromHistory);
+  
+  if (filteredHistory.length === 0) {
+    return 'No conversation history to summarize.';
+  }
+  
+  // Build conversation context for summarization
+  const conversationText = filteredHistory
+    .map((msg, idx) => {
+      const role = msg.role === 'user' ? 'User' : 'Assistant';
+      return `[${idx + 1}] ${role}: ${msg.content}`;
+    })
+    .join('\n\n');
+  
+  const summaryPrompt = `You are summarizing a conversation about creating personas, workflows, or projects for PilotFrame.
+
+Your task is to create a COMPREHENSIVE and DETAILED summary that captures:
+1. The user's goals and requirements
+2. All key decisions and choices made
+3. Important details, specifications, and constraints discussed
+4. The current state of what's being created (persona/workflow/project)
+5. Any pending questions or incomplete items
+6. The overall context and direction of the conversation
+
+The summary must be ELABORATE enough that someone reading ONLY the summary (without the original messages) can:
+- Understand the full context of what was discussed
+- Continue the conversation naturally
+- Remember all important decisions and details
+- Know what has been completed and what remains
+
+Format the summary as a clear, structured document with sections if needed.
+
+CONVERSATION TO SUMMARIZE:
+${conversationText}
+
+Generate the comprehensive summary now:`;
+  
+  try {
+    const response = await client.chat.completions.create({
+      model: AZURE_OPENAI_DEPLOYMENT_NAME,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert at creating detailed, comprehensive summaries that preserve all context and nuance from conversations.'
+        },
+        {
+          role: 'user',
+          content: summaryPrompt
+        }
+      ],
+      temperature: 0.3, // Lower temperature for more consistent, factual summaries
+      max_tokens: 2000 // Allow for detailed summaries
+    });
+    
+    const summary = response.choices[0]?.message?.content || 'Failed to generate summary.';
+    return summary;
+  } catch (error) {
+    console.error('[AssistantService] Error generating conversation summary:', error);
+    throw new Error(`Failed to generate summary: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Context-aware chat with specialized prompts for create/update/refine operations
+ */
+export async function chatWithContextualAssistant(
+  request: ContextualChatRequest,
+  conversationHistory: ChatMessage[] = []
+): Promise<ChatResponse> {
+  const client = getClient();
+  const { personaSchema, workflowSchema } = loadSchemas();
+  const examples = await loadExamples();
+  
+  // Build contextual prompt based on operation and entity type
+  const systemPrompt = buildContextualPrompt({
+    operation: request.operation,
+    entityType: request.entityType,
+    schema: request.entityType === 'persona' ? personaSchema : 
+            request.entityType === 'workflow' ? workflowSchema :
+            undefined,
+    currentSpec: request.currentSpec,
+    examples: request.entityType === 'persona' ? examples.personas :
+              request.entityType === 'workflow' ? examples.workflows :
+              undefined,
+    focusArea: request.focusArea
+  });
+  
+  // Build messages array
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory.filter(msg => !msg.excludeFromHistory).map(msg => ({
+      role: msg.role as 'system' | 'user' | 'assistant',
+      content: msg.content
+    })),
+    { role: 'user', content: request.message }
+  ];
+  
+  console.log(`[AssistantService] Contextual request: ${request.operation} ${request.entityType}`);
+  
+  try {
+    const isGpt5Model = AZURE_OPENAI_DEPLOYMENT_NAME.startsWith('gpt-5');
+    
+    const requestParams: {
+      model: string;
+      messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+      max_completion_tokens?: number;
+      max_tokens?: number;
+      temperature?: number;
+    } = {
+      model: '',
+      messages: messages
+    };
+    
+    if (isGpt5Model) {
+      requestParams.max_completion_tokens = 4000;
+    } else {
+      requestParams.max_tokens = 4000;
+      requestParams.temperature = 0.7;
+    }
+    
+    const response = await client.chat.completions.create(requestParams);
+    const assistantMessage = response.choices[0]?.message?.content || '';
+    
+    // Try to extract JSON spec if present
+    let suggestedSpec: ChatResponse['suggestedSpec'] | undefined;
+    
+    // Try multiple patterns for JSON extraction
+    let jsonText: string | null = null;
+    
+    // Pattern 1: ```json ... ```
+    const jsonMatch1 = assistantMessage.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch1) {
+      jsonText = jsonMatch1[1];
+    } else {
+      // Pattern 2: ``` ... ``` (generic code block)
+      const jsonMatch2 = assistantMessage.match(/```\s*([\s\S]*?)\s*```/);
+      if (jsonMatch2) {
+        jsonText = jsonMatch2[1];
+      } else {
+        // Pattern 3: Look for JSON object directly
+        const jsonMatch3 = assistantMessage.match(/\{[\s\S]*\}/);
+        if (jsonMatch3) {
+          jsonText = jsonMatch3[0];
+        }
+      }
+    }
+    
+    if (jsonText) {
+      try {
+        let parsed = JSON.parse(jsonText.trim());
+        
+        // FALLBACK: If AI incorrectly wrapped it in suggestedSpec, unwrap it
+        if (parsed.suggestedSpec && typeof parsed.suggestedSpec === 'object') {
+          console.log('[AssistantService] Unwrapping incorrectly wrapped suggestedSpec');
+          parsed = parsed.suggestedSpec;
+        }
+        
+        // Determine type based on structure
+        if (parsed.epics && Array.isArray(parsed.epics)) {
+          suggestedSpec = { type: 'project', spec: parsed };
+        } else if (parsed.steps && parsed.execution_spec) {
+          suggestedSpec = { type: 'workflow', spec: parsed };
+        } else if (parsed.specification || (parsed.id && parsed.name)) {
+          suggestedSpec = { type: 'persona', spec: parsed };
+        }
+      } catch (e) {
+        console.warn('Failed to parse JSON from assistant response:', e);
+      }
+    }
+    
+    // Determine status
+    let status: ChatResponse['status'] = 'conversing';
+    if (suggestedSpec) {
+      status = 'ready_to_save';
+    } else if (assistantMessage.toLowerCase().includes('clarify') || assistantMessage.toLowerCase().includes('question')) {
+      status = 'needs_clarification';
+    }
+    
+    // Extract questions if present
+    const questions: string[] = [];
+    const questionMatches = assistantMessage.match(/\?\s*([^\n]+)/g);
+    if (questionMatches) {
+      questions.push(...questionMatches.map((q: string) => q.replace(/^\?\s*/, '').trim()));
+    }
+    
+    return {
+      message: assistantMessage,
+      suggestedSpec,
+      questions: questions.length > 0 ? questions : undefined,
+      status
+    };
+  } catch (error: unknown) {
+    console.error('Error calling Azure OpenAI:', error);
+    
+    if (error && typeof error === 'object' && 'status' in error) {
+      const status = (error as { status?: number }).status;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (status === 404) {
+        throw new Error(
+          `Deployment "${AZURE_OPENAI_DEPLOYMENT_NAME}" not found. ` +
+          `Please verify the deployment name and endpoint are correct.`
+        );
+      }
+      
+      if (status === 429) {
+        throw new Error(
+          `Rate limit exceeded. Please wait before retrying.`
+        );
+      }
+      
+      throw new Error(`Azure OpenAI API error (${status}): ${errorMessage}`);
+    }
+    
+    throw new Error(`Failed to get assistant response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 export async function chatWithAssistant(
